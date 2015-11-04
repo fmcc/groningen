@@ -1,0 +1,1 @@
+console.error("Error: Parsing file /home/finlay/Code/AtticInscriptions/leiden_plus_editor/js/editor.js: Unexpected token (38:5)");
