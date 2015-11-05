@@ -15,7 +15,7 @@ const ifProp = (a) => R.propOr("", a);
 const ifAttr = R.compose(strip, ifProp("attr"));
 
 // buttonObj
-const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, click: f});
+const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, class:'btn btn-default', click: f});
 
 // createButton :: Object => Object
 const createButton = (b) => $('<button/>', b);

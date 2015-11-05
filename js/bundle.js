@@ -28,7 +28,10 @@ const render = (a) => R.compose(R.apply(R.compose), R.map(R.partial(replaceLangP
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
-            editor.insert(render({text:editor.getSelectedText(), attr:R.propOr("", "attr", lang_elem), alt:""})(lang_elem.template));
+            var t = editor.getSelectedText();
+            var at = R.propOr("", "attr", lang_elem);
+            var al = "";
+            editor.insert(render({text:t, attr:at,alt:al})(lang_elem.template));
             editor.focus();
         };
     };
@@ -113,7 +116,7 @@ session = editor.getSession();
 session.setUseWrapMode(true);
 session.setWrapLimitRange();
 
-editor.setValue("<T=<D=<=\r\n...\r\n...\r\n...\r\n... of the ...\r\n((5)) ... the People shall elect\r\nstraightaway ten men from all the Athenians and five from the Council;\r\nand those elected shall - in the Eleusinion in the city\r\n... of the <sacred tract=hieras orgados>/*footnote|1*/\r\n... from neither favour nor\r\n((10)) enmity ... but as justly and piously as possible\r\n... from the sixteenth of Posideon/*footnote|2*/\r\n... in the archonship of Aristodemos (352/1); and there shall be present\r\nthe <king=basilea> and the hierophant and the <torchbearer=dadouchon>/*footnote|3*/\r\nand the Kerykes and the Eumolpidai and any other Athenian who\r\n((15)) wishes, so that they may place the <markers=horous> as piously and justly as possible;\r\nand there shall have oversight of the <sacred tract=hieras orgados> and the other\r\n[<sacred precincts=hierōn temenōn>] at Athens from this day for\r\nall time those whom the law requires for each of them and\r\nthe Council of the Areopagos and the general\r\n((20)) elected for the <protection=phulakēn> of the <country=chōras> and the <patrol commanders=peripolarchous>\r\nand the demarchs and the Council in office at any time\r\nand any other Athenian who wishes, in whatever way\r\nthey know how; and the secretary of the Council shall write on two\r\npieces of tin, equal and alike, on the one, if it is preferable and better\r\n((25)) for the Athenian People that the <king=basilea>/*footnote|4*/ lets out the\r\narea of the <sacred tract=hieras orgados> which is now being worked [<:out|alt|in:>]side the <markers=horōn>\r\nfor <building=oikodomian> the <portico=prostōiou> and <repair=episkeuēn> of the <sanctuary=hierou> of the two goddesses;/*footnote|5*/\r\n=>=D>=T>", -1);
+editor.setValue("<T=.en <D= <=\r\n...\r\n...\r\n...\r\n... of the ...\r\n((5)) ... the People shall elect\r\nstraightaway ten men from all the Athenians and five from the Council;\r\nand those elected shall - in the Eleusinion in the city\r\n... of the <sacred tract=hieras orgados>/*footnote|1*/\r\n... from neither favour nor\r\n((10)) enmity ... but as justly and piously as possible\r\n... from the sixteenth of Posideon/*footnote|2*/\r\n... in the archonship of Aristodemos (352/1); and there shall be present\r\nthe <king=basilea> and the hierophant and the <torchbearer=dadouchon>/*footnote|3*/\r\nand the Kerykes and the Eumolpidai and any other Athenian who\r\n((15)) wishes, so that they may place the <markers=horous> as piously and justly as possible;\r\nand there shall have oversight of the <sacred tract=hieras orgados> and the other\r\n[<sacred precincts=hierōn temenōn>] at Athens from this day for\r\nall time those whom the law requires for each of them and\r\nthe Council of the Areopagos and the general\r\n((20)) elected for the <protection=phulakēn> of the <country=chōras> and the <patrol commanders=peripolarchous>\r\nand the demarchs and the Council in office at any time\r\nand any other Athenian who wishes, in whatever way\r\nthey know how; and the secretary of the Council shall write on two\r\npieces of tin, equal and alike, on the one, if it is preferable and better\r\n((25)) for the Athenian People that the <king=basilea>/*footnote|4*/ lets out the\r\narea of the <sacred tract=hieras orgados> which is now being worked [<:out|alt|in:>]side the <markers=horōn>\r\nfor <building=oikodomian> the <portico=prostōiou> and <repair=episkeuēn> of the <sanctuary=hierou> of the two goddesses;/*footnote|5*/\r\n=> =D> =T>", -1);
 
 },{"./leiden_plus.js":2,"./ui.js":4,"brace":6,"brace/ext/language_tools":5,"brace/mode/javascript":7,"brace/theme/dawn":8,"jquery":10,"ramda":11}],4:[function(require,module,exports){
 var R = require('ramda');
@@ -133,7 +136,7 @@ const ifProp = (a) => R.propOr("", a);
 const ifAttr = R.compose(strip, ifProp("attr"));
 
 // buttonObj
-const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, click: f});
+const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, class:'btn btn-default', click: f});
 
 // createButton :: Object => Object
 const createButton = (b) => $('<button/>', b);
