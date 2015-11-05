@@ -8,6 +8,8 @@ const toAceAnnotation = (e) => { return {column:e.column, raw:e.cause, row:e.lin
 
 const setAnnotations = (editor, annotations) => editor.getSession().setAnnotations([annotations]);
 
+//const aye = R.compose(R.partial(setAnnotations, [editor]), toAceAnnotation, parseException);
+
 /* Template formatting */
 // bracesWrap :: String -> String
 const bracesWrap = (x) => `{${x}}`;
@@ -25,7 +27,10 @@ const render = (a) => R.compose(R.apply(R.compose), R.map(R.partial(replaceLangP
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
-            editor.insert(render({text:editor.getSelectedText(), attr:lang_elem.attr})(lang_elem.template));
+            editor.insert(render({text:editor.getSelectedText(), attr:lang_elem.attr, alt:""})(lang_elem.template));
             editor.focus();
         };
     };
+
+//var url = "/stupid/";
+//var data = {content: editor.getValue(), direction: "nonxml2xml", type:"translation_epidoc"};
