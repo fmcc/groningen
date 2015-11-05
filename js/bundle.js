@@ -28,7 +28,7 @@ const render = (a) => R.compose(R.apply(R.compose), R.map(R.partial(replaceLangP
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
-            editor.insert(render({text:editor.getSelectedText(), attr:lang_elem.attr, alt:""})(lang_elem.template));
+            editor.insert(render({text:editor.getSelectedText(), attr:R.propOr("", "attr", lang_elem), alt:""})(lang_elem.template));
             editor.focus();
         };
     };
@@ -108,6 +108,7 @@ editor.setOptions({
     theme: 'ace/theme/dawn',
     wrapBehavioursEnabled: true, 
 });
+
 session = editor.getSession();
 session.setUseWrapMode(true);
 session.setWrapLimitRange();
@@ -124,9 +125,12 @@ const elemVariants = p => obj => R.map(R.merge(R.dissoc(p,obj)), R.map(R.objOf(p
 // constructVariants:: String => [Object] => [Object]
 const constructVariants = (a) => R.chain(R.when(R.prop(a), elemVariants(a)))
 
+// strip :: String -> String
+const strip = R.replace(/\W/g,'');
+
 const ifProp = (a) => R.propOr("", a);
 
-const ifAttr = ifProp("attr");
+const ifAttr = R.compose(strip, ifProp("attr"));
 
 // buttonObj
 const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, click: f});

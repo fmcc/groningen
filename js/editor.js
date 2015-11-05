@@ -27,7 +27,7 @@ const render = (a) => R.compose(R.apply(R.compose), R.map(R.partial(replaceLangP
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
-            editor.insert(render({text:editor.getSelectedText(), attr:lang_elem.attr, alt:""})(lang_elem.template));
+            editor.insert(render({text:editor.getSelectedText(), attr:R.propOr("", "attr", lang_elem), alt:""})(lang_elem.template));
             editor.focus();
         };
     };

@@ -21,6 +21,7 @@ editor.setOptions({
     theme: 'ace/theme/dawn',
     wrapBehavioursEnabled: true, 
 });
+
 session = editor.getSession();
 session.setUseWrapMode(true);
 session.setWrapLimitRange();

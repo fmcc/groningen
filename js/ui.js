@@ -7,9 +7,12 @@ const elemVariants = p => obj => R.map(R.merge(R.dissoc(p,obj)), R.map(R.objOf(p
 // constructVariants:: String => [Object] => [Object]
 const constructVariants = (a) => R.chain(R.when(R.prop(a), elemVariants(a)))
 
+// strip :: String -> String
+const strip = R.replace(/\W/g,'');
+
 const ifProp = (a) => R.propOr("", a);
 
-const ifAttr = ifProp("attr");
+const ifAttr = R.compose(strip, ifProp("attr"));
 
 // buttonObj
 const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, click: f});
