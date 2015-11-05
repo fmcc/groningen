@@ -5,7 +5,7 @@ module.exports = {
     {
         name: "translation", 
         template:"<T={attr}{text}=T>",
-        attrs: [".en",".de"]
+        attr: [".en",".de"]
     },
     {
         name: "div",
@@ -26,7 +26,7 @@ module.exports = {
     {
         name: "note",
         template: "/*{attr}{text}*/",
-        attrs: ["tribe","footnote","inline"]
+        attr: ["tribe|","footnote|","inline|"]
     },
     {
         name: "choice",
@@ -35,7 +35,7 @@ module.exports = {
     {
         name: "transliteration",
         template: "<{alt}{attr}={text}>",
-        attrs: ["~grc-Latn"]
+        attr: ["~grc-Latn"]
     },
     {
         name: "gap", 

@@ -1,23 +1,29 @@
 var R = require('ramda');
+var ed = require('./editor.js');
 
-var ed_funcs = require('./editor.js');
+// elemVariants :: String => Object => [Object]
+const elemVariants = p => obj => R.map(R.merge(R.dissoc(p,obj)), R.map(R.objOf(p), R.prop(p, obj)));
 
-// createButton :: lang_obj -> html_element
-function createButton (ed, lang_obj) {
-    return $('<button/>', {
-        text: lang_obj.name,
-        id: "button_" + lang_obj.name,
-        click: ed_funcs.element_insert(ed, lang_obj),
-    });
-}
+// constructVariants:: String => [Object] => [Object]
+const constructVariants = (a) => R.chain(R.when(R.prop(a), elemVariants(a)))
 
-function addTo (add_to, element) {
-    add_to.append(element);
-};
+const ifProp = (a) => R.propOr("", a);
+
+const ifAttr = ifProp("attr");
+
+// buttonObj
+const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, click: f});
+
+// createButton :: Object => Object
+const createButton = (b) => $('<button/>', b);
+
+// addTo :: Object => Object 
+const addTo = obj => elem => obj.append(elem);
 
 exports.createUI = function (editor, loc, lang) {
-    var addToUI = R.partial(addTo, [loc]);
-    var edButton = R.partial(createButton, [editor]);
-    R.map(addToUI, R.map(edButton, lang.elements));
+    R.map(R.compose(addTo(loc), 
+                createButton, 
+                R.converge(R.call, [button, R.partial(ed.element_insert, [editor])])
+                ), constructVariants('attr')(lang.elements));
 };
 

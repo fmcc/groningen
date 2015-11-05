@@ -1,16 +1,12 @@
 var R = require('ramda');
 
-function wrap_selected(editor, tag) {
-    range = editor.getSelectionRange();
-    editor.clearSelection();
-    insert_at_postion(editor, tag.end, range.end);
-    insert_at_postion(editor, tag.start, range.start);
-    editor.focus();
-};
-
+// parseException :: xsugarResponse -> xsugarException
+const parseException = R.prop('exception');
 
 // toAceAnnotation :: xsugarException -> aceAnnotation
 const toAceAnnotation = (e) => { return {column:e.column, raw:e.cause, row:e.line, text:e.cause, type:"error"}};
+
+const setAnnotations = (editor, annotations) => editor.getSession().setAnnotations([annotations]);
 
 /* Template formatting */
 // bracesWrap :: String -> String
@@ -25,14 +21,11 @@ const render = (a) => R.compose(R.apply(R.compose), R.map(R.partial(replaceLangP
 //const insertDict = () => {text:"", attr:"", alt:""};
 
 /* Insertion  */
-const insertElement = (editor, lang_elem) => editor.insert(
-
+//const insertElement = (editor, lang_elem) => editor.insert(
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
-
-            editor.insert(render({text:editor.getSelectedText()})(lang_elem.template));
-
+            editor.insert(render({text:editor.getSelectedText(), attr:lang_elem.attr})(lang_elem.template));
             editor.focus();
         };
     };
