@@ -20,6 +20,7 @@
     <style>
     body { padding-top: 0;}
     #leiden-plus-editor {
+      position: relative;
       height: 600px;
     }
     #leiden-plus-control > button {
@@ -46,5 +47,17 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/bundle.js"></script>
+
+    <script type="text/javascript" charset="utf-8">
+      $.getJSON("/js/leiden_plus.json", function(lang_def){
+        LeidenEditor({
+          "controls": "#leiden-plus-control",
+          "editor": "leiden-plus-editor",
+          "language_definition": lang_def,
+          "xsugar_url": "http://libdc3-dev-03.oit.duke.edu/xsugar/",
+        });
+      });
+
+    </script>
   </body>
 </html>
