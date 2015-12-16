@@ -1,19 +1,19 @@
 
-module.exports = {
+leiden_plus_translation = {
     name: "Leiden+ translation", 
     elements: [
     {
         name: "translation", 
-        template:"<T={attr}{text}=T>",
+        template:"<T={attr}\n{text}\n=T>",
         attr: [".en",".de"]
     },
     {
         name: "div",
-        template:"<D={attr}{text}=D>"
+        template:"<D={attr}\n{text}\n=D>"
     },
     {
         name: "p",
-        template: "<={text}=>",
+        template: "<=\n{text}\n=>",
     },
     {
         name: "line_number",
