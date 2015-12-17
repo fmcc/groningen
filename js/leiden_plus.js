@@ -25,8 +25,8 @@ leiden_plus_translation = {
     },
     {
         name: "note",
-        template: "/*{attr}{text}*/",
-        attr: ["tribe|","footnote|","inline|"]
+        template: "/*{attr}|{text}*/",
+        attr: ["tribe","footnote","inline"]
     },
     {
         name: "choice",

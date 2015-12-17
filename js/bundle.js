@@ -50,7 +50,58 @@ exports.toggleSplit = toggleSplit;
 exports.setAnnotations = setAnnotations;
 exports.openTextInSplit = openTextInSplit;
 
-},{"ramda":12}],2:[function(require,module,exports){
+},{"ramda":14}],2:[function(require,module,exports){
+var R = require('ramda');
+
+ace.define('ace/mode/dynamic_leiden_plus_rules', ["require", 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text_highlight_rules'], function(acequire, exports, module) {
+    var oop = acequire("../lib/oop");
+    var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
+
+    var DynamicLeidenPlusRules = function() {
+	this.setKeywords = function(kwMap) {     
+	    this.keywordRule.onMatch = this.createKeywordMapper(kwMap, "identifier")
+        }
+        this.keywordRule = {
+            regex : /[^\s]+/,
+            onMatch : function() {return "text"}
+        }
+
+        this.$rules = {
+            "start" : [ 
+		{
+                token: "string",
+                start: '"', 
+                end: '"',
+                next: [{ token : "constant.language.escape.lsl", regex : /\\[tn"\\]/}]
+            	},
+		this.keywordRule,
+            ]
+        };
+	this.normalizeRules()
+    };
+
+    oop.inherits(DynamicLeidenPlusRules, TextHighlightRules);
+
+    exports.DynamicLeidenPlusRules = DynamicLeidenPlusRules;
+});
+
+var TextMode = ace.acequire("ace/mode/text").Mode;
+var dynamicMode = new TextMode();
+dynamicMode.HighlightRules = ace.acequire('ace/mode/dynamic_leiden_plus_rules').DynamicLeidenPlusRules;
+
+
+const allProp = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
+const concat = a => (b,c) => b + a + c;
+const attrStr = l => R.reduce(concat('|'), "", allProp('attr', l));
+
+const setKeywords = (ed, kw) => ed.session.$mode.$highlightRules.setKeywords({"keyword": kw})
+
+const addHighlighting = (ed, l) => [ed.session.setMode(dynamicMode), setKeywords(ed, attrStr(l))]; 
+
+exports.addHighlighting = addHighlighting;
+
+
+},{"ramda":14}],3:[function(require,module,exports){
 var $ = require('jquery');
 var R = require('ramda');
 var ace = require('brace');
@@ -58,7 +109,10 @@ var ace = require('brace');
 require('brace/theme/dawn');
 require('brace/theme/monokai');
 require('brace/ext/split.js');
-require('brace/mode/xml.js');
+require('brace/mode/xml');
+require("brace/mode/text");
+
+var hl = require("./highlight")
 
 var utils = require('./utils.js');
 var ui = require('./ui.js');
@@ -75,7 +129,7 @@ function LeidenEditor(i) {
         fontSize: 16,
         maxLines: 200,
         showPrintMargin: false,
-        theme: 'ace/theme/dawn',
+        theme: 'ace/theme/monokai',
         mode: 'ace/mode/xml',
         wrapBehavioursEnabled: true, 
         showInvisibles: true
@@ -85,23 +139,32 @@ function LeidenEditor(i) {
     var split = new Split(document.getElementById(i.editor), theme, 2);
     env.editor = split.getEditor(0);
     env.editor.setOptions(ed_opt);
-    env.xml_editor = split.getEditor(1);
-    env.xml_editor.setOptions(ed_opt);
-    env.xml_editor.setFontSize(16);
+
+    const allProp = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
+    const concat = a => (b,c) => b + a + c;
+    const attrStr = l => R.reduce(concat('|'), "", allProp('attr', l));
+    
+    const trim = s => s.trim();
+    const splitter = a => s => s.split(a);
+
+
+    console.log(R.chain(splitter(/{\w+}/), allProp('template',i.language_definition.elements)));
+
+    hl.addHighlighting(env.editor, i.language_definition.elements);
+
     //split.getEditor(1).setOptions(ed_opt);
     split.setSplits(1);
     split.on("focus", function(editor) {
         env.editor = editor;
     });
     env.split = split;  
-    console.log(split);
     ui.createUI($(i.controls), env, i.xsugar_url, i.language_definition);
     window.env = env;
 };
 
 window.LeidenEditor = LeidenEditor;
 
-},{"./ui.js":3,"./utils.js":4,"brace":7,"brace/ext/split.js":6,"brace/mode/xml.js":8,"brace/theme/dawn":9,"brace/theme/monokai":10,"jquery":11,"ramda":12}],3:[function(require,module,exports){
+},{"./highlight":2,"./ui.js":4,"./utils.js":5,"brace":8,"brace/ext/split.js":7,"brace/mode/text":9,"brace/mode/xml":10,"brace/theme/dawn":11,"brace/theme/monokai":12,"jquery":13,"ramda":14}],4:[function(require,module,exports){
 var R = require('ramda');
 var ed_tools = require('./editor_tools.js');
 var xs = require('./xsugar.js');
@@ -137,7 +200,7 @@ exports.createUI = function (loc, env, url, lang) {
                ), constructVariants('attr')(lang.elements));
     };
 
-},{"./editor_tools.js":1,"./xsugar.js":5,"ramda":12}],4:[function(require,module,exports){
+},{"./editor_tools.js":1,"./xsugar.js":6,"ramda":14}],5:[function(require,module,exports){
 var $ = require('jquery');
 var R = require('ramda');
 
@@ -150,7 +213,7 @@ const toList = R.ifElse(R.is(Array), R.identity, R.of);
 exports.ajaxCORSPost = ajaxCORSPost;
 exports.toList = toList;
 
-},{"jquery":11,"ramda":12}],5:[function(require,module,exports){
+},{"jquery":13,"ramda":14}],6:[function(require,module,exports){
 var R = require('ramda');
 
 var utils = require('./utils.js');
@@ -200,7 +263,7 @@ Request Parameters:
 */
 
 
-},{"./editor_tools.js":1,"./utils.js":4,"ramda":12}],6:[function(require,module,exports){
+},{"./editor_tools.js":1,"./utils.js":5,"ramda":14}],7:[function(require,module,exports){
 ace.define("ace/split",["require","exports","module","ace/lib/oop","ace/lib/lang","ace/lib/event_emitter","ace/editor","ace/virtual_renderer","ace/edit_session"], function(acequire, exports, module) {
 "use strict";
 
@@ -447,7 +510,7 @@ module.exports = acequire("../split");
                     ace.acequire(["ace/ext/split"], function() {});
                 })();
             
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /* ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
  *
@@ -18736,7 +18799,10 @@ exports.UndoManager = UndoManager;
             })();
         
 module.exports = window.ace.acequire("ace/ace");
-},{"w3c-blob":13}],8:[function(require,module,exports){
+},{"w3c-blob":15}],9:[function(require,module,exports){
+
+
+},{}],10:[function(require,module,exports){
 ace.define("ace/mode/xml_highlight_rules",["require","exports","module","ace/lib/oop","ace/mode/text_highlight_rules"], function(acequire, exports, module) {
 "use strict";
 
@@ -19400,7 +19466,7 @@ oop.inherits(Mode, TextMode);
 exports.Mode = Mode;
 });
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 ace.define("ace/theme/dawn",["require","exports","module","ace/lib/dom"], function(acequire, exports, module) {
 
 exports.isDark = false;
@@ -19511,7 +19577,7 @@ var dom = acequire("../lib/dom");
 dom.importCssString(exports.cssText, exports.cssClass);
 });
 
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 ace.define("ace/theme/monokai",["require","exports","module","ace/lib/dom"], function(acequire, exports, module) {
 
 exports.isDark = true;
@@ -19619,7 +19685,7 @@ var dom = acequire("../lib/dom");
 dom.importCssString(exports.cssText, exports.cssClass);
 });
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -28831,7 +28897,7 @@ return jQuery;
 
 }));
 
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 //  Ramda v0.18.0
 //  https://github.com/ramda/ramda
 //  (c) 2013-2015 Scott Sauyet, Michael Hurley, and David Chambers
@@ -36775,7 +36841,7 @@ return jQuery;
 
 }.call(this));
 
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 (function (global){
 module.exports = get_blob()
 
@@ -36807,4 +36873,4 @@ function get_blob() {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[2]);
+},{}]},{},[3]);

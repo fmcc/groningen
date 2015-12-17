@@ -5,7 +5,10 @@ var ace = require('brace');
 require('brace/theme/dawn');
 require('brace/theme/monokai');
 require('brace/ext/split.js');
-require('brace/mode/xml.js');
+require('brace/mode/xml');
+require("brace/mode/text");
+
+var hl = require("./highlight")
 
 var utils = require('./utils.js');
 var ui = require('./ui.js');
@@ -22,7 +25,7 @@ function LeidenEditor(i) {
         fontSize: 16,
         maxLines: 200,
         showPrintMargin: false,
-        theme: 'ace/theme/dawn',
+        theme: 'ace/theme/monokai',
         mode: 'ace/mode/xml',
         wrapBehavioursEnabled: true, 
         showInvisibles: true
@@ -32,16 +35,25 @@ function LeidenEditor(i) {
     var split = new Split(document.getElementById(i.editor), theme, 2);
     env.editor = split.getEditor(0);
     env.editor.setOptions(ed_opt);
-    env.xml_editor = split.getEditor(1);
-    env.xml_editor.setOptions(ed_opt);
-    env.xml_editor.setFontSize(16);
+
+    const allProp = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
+    const concat = a => (b,c) => b + a + c;
+    const attrStr = l => R.reduce(concat('|'), "", allProp('attr', l));
+    
+    const trim = s => s.trim();
+    const splitter = a => s => s.split(a);
+
+
+    console.log(R.chain(splitter(/{\w+}/), allProp('template',i.language_definition.elements)));
+
+    hl.addHighlighting(env.editor, i.language_definition.elements);
+
     //split.getEditor(1).setOptions(ed_opt);
     split.setSplits(1);
     split.on("focus", function(editor) {
         env.editor = editor;
     });
     env.split = split;  
-    console.log(split);
     ui.createUI($(i.controls), env, i.xsugar_url, i.language_definition);
     window.env = env;
 };
