@@ -153,3 +153,17 @@ Request Parameters:
 var dc3_xsugar_url = "http://libdc3-dev-03.oit.duke.edu/xsugar/";
 
 var convertLeiden = ajaxCORSPost(dc3_xsugar_url, formatResponse, logIt);
+
+
+
+
+
+
+var aye = function (a) {
+    return function (b) {
+        return a + b;
+    }
+};
+
+
+

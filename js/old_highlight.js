@@ -15,13 +15,7 @@ ace.define('ace/mode/dynamic_leiden_plus_rules', ["require", 'exports', 'module'
 
         this.$rules = {
             "start" : [ 
-		{
-                token: "string",
-                start: '"', 
-                end: '"',
-                next: [{ token : "constant.language.escape.lsl", regex : /\\[tn"\\]/}]
-            	},
-		this.keywordRule,
+		{ token: "string", start: '"', end: '"', },
             ]
         };
 	this.normalizeRules()
@@ -37,13 +31,26 @@ var dynamicMode = new TextMode();
 dynamicMode.HighlightRules = ace.acequire('ace/mode/dynamic_leiden_plus_rules').DynamicLeidenPlusRules;
 
 
-const allProp = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
-const concat = a => (b,c) => b + a + c;
-const attrStr = l => R.reduce(concat('|'), "", allProp('attr', l));
+// flatProps :: (String, [Objects]) => [Objects]
+const flatProps = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
+
+// kwStr :: [String] => String
+const kwStr = R.join('|');
+    
+// trim :: String => String
+const trim = s => s.trim();
+
+// split :: String => String => [String]
+const split = a => s => s.split(a);
+
+// attrKW :: [Object] => String 
+const attrKW = xs => kwStr(flatProps('attr', xs));
+
+//console.log(R.filter(!R.isEmpty, R.map(trim, R.chain(splitter(/{\w+}/), allProp('template',i.language_definition.elements)))));
 
 const setKeywords = (ed, kw) => ed.session.$mode.$highlightRules.setKeywords({"keyword": kw})
 
-const addHighlighting = (ed, l) => [ed.session.setMode(dynamicMode), setKeywords(ed, attrStr(l))]; 
+const addHighlighting = (ed, l) => [ed.session.setMode(dynamicMode), setKeywords(ed, attrKW(l))]; 
 
 exports.addHighlighting = addHighlighting;
 

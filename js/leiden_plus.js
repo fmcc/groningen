@@ -9,7 +9,8 @@ leiden_plus_translation = {
     },
     {
         name: "div",
-        template:"<D={attr}\n{text}\n=D>"
+        template:"<D={attr}\n{text}\n=D>",
+        attr: [".folio"]
     },
     {
         name: "p",

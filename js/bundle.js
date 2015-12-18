@@ -51,57 +51,6 @@ exports.setAnnotations = setAnnotations;
 exports.openTextInSplit = openTextInSplit;
 
 },{"ramda":14}],2:[function(require,module,exports){
-var R = require('ramda');
-
-ace.define('ace/mode/dynamic_leiden_plus_rules', ["require", 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text_highlight_rules'], function(acequire, exports, module) {
-    var oop = acequire("../lib/oop");
-    var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
-
-    var DynamicLeidenPlusRules = function() {
-	this.setKeywords = function(kwMap) {     
-	    this.keywordRule.onMatch = this.createKeywordMapper(kwMap, "identifier")
-        }
-        this.keywordRule = {
-            regex : /[^\s]+/,
-            onMatch : function() {return "text"}
-        }
-
-        this.$rules = {
-            "start" : [ 
-		{
-                token: "string",
-                start: '"', 
-                end: '"',
-                next: [{ token : "constant.language.escape.lsl", regex : /\\[tn"\\]/}]
-            	},
-		this.keywordRule,
-            ]
-        };
-	this.normalizeRules()
-    };
-
-    oop.inherits(DynamicLeidenPlusRules, TextHighlightRules);
-
-    exports.DynamicLeidenPlusRules = DynamicLeidenPlusRules;
-});
-
-var TextMode = ace.acequire("ace/mode/text").Mode;
-var dynamicMode = new TextMode();
-dynamicMode.HighlightRules = ace.acequire('ace/mode/dynamic_leiden_plus_rules').DynamicLeidenPlusRules;
-
-
-const allProp = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
-const concat = a => (b,c) => b + a + c;
-const attrStr = l => R.reduce(concat('|'), "", allProp('attr', l));
-
-const setKeywords = (ed, kw) => ed.session.$mode.$highlightRules.setKeywords({"keyword": kw})
-
-const addHighlighting = (ed, l) => [ed.session.setMode(dynamicMode), setKeywords(ed, attrStr(l))]; 
-
-exports.addHighlighting = addHighlighting;
-
-
-},{"ramda":14}],3:[function(require,module,exports){
 var $ = require('jquery');
 var R = require('ramda');
 var ace = require('brace');
@@ -112,8 +61,7 @@ require('brace/ext/split.js');
 require('brace/mode/xml');
 require("brace/mode/text");
 
-var hl = require("./highlight")
-
+var mode_tools = require("./mode.js")
 var utils = require('./utils.js');
 var ui = require('./ui.js');
 
@@ -140,18 +88,8 @@ function LeidenEditor(i) {
     env.editor = split.getEditor(0);
     env.editor.setOptions(ed_opt);
 
-    const allProp = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
-    const concat = a => (b,c) => b + a + c;
-    const attrStr = l => R.reduce(concat('|'), "", allProp('attr', l));
-    
-    const trim = s => s.trim();
-    const splitter = a => s => s.split(a);
-
-
-    console.log(R.chain(splitter(/{\w+}/), allProp('template',i.language_definition.elements)));
-
-    hl.addHighlighting(env.editor, i.language_definition.elements);
-
+    mode_tools.aye(i.language_definition.elements);
+    mode_tools.setMode(env.editor, i.language_definition.elements);
     //split.getEditor(1).setOptions(ed_opt);
     split.setSplits(1);
     split.on("focus", function(editor) {
@@ -164,7 +102,117 @@ function LeidenEditor(i) {
 
 window.LeidenEditor = LeidenEditor;
 
-},{"./highlight":2,"./ui.js":4,"./utils.js":5,"brace":8,"brace/ext/split.js":7,"brace/mode/text":9,"brace/mode/xml":10,"brace/theme/dawn":11,"brace/theme/monokai":12,"jquery":13,"ramda":14}],4:[function(require,module,exports){
+},{"./mode.js":3,"./ui.js":4,"./utils.js":5,"brace":8,"brace/ext/split.js":7,"brace/mode/text":9,"brace/mode/xml":10,"brace/theme/dawn":11,"brace/theme/monokai":12,"jquery":13,"ramda":14}],3:[function(require,module,exports){
+var R = require('ramda');
+
+ace.define('ace/mode/folding/cstyle', ["require", 'exports', 'module' , 'ace/lib/oop', 'ace/range', 'ace/mode/folding/fold_mode'], function(acequire, exports, module) {
+    var oop = acequire("../../lib/oop");
+    var Range = acequire("../../range").Range;
+    var BaseFoldMode = acequire("./fold_mode").FoldMode;
+
+    var FoldMode = exports.FoldMode = function(commentRegex) {
+        if (commentRegex) {
+            this.foldingStartMarker = new RegExp(
+                this.foldingStartMarker.source.replace(/\|[^|]*?$/, "|" + commentRegex.start)
+            );
+            this.foldingStopMarker = new RegExp(
+                this.foldingStopMarker.source.replace(/\|[^|]*?$/, "|" + commentRegex.end)
+            );
+        }
+    };
+    oop.inherits(FoldMode, BaseFoldMode);
+    (function() {
+        this.foldingStartMarker = /(\{|\[)[^\}\]]*$|^\s*(\/\*)|^note /;
+        this.foldingStopMarker = /^[^\[\{]*(\}|\])|^[\s\*]*(\*\/)|^end/;
+        this.getFoldWidgetRange = function(session, foldStyle, row) {
+            var line = session.getLine(row);
+            var match = line.match(this.foldingStartMarker);
+            if (match) {
+                var i = match.index;
+                if (match[1])
+                    return this.openingBracketBlock(session, match[1], row, i);
+                return session.getCommentFoldRange(row, i + match[0].length, 1);
+            }
+            if (foldStyle !== "markbeginend")
+                return;
+            var match = line.match(this.foldingStopMarker);
+            if (match) {
+                var i = match.index + match[0].length;
+                if (match[1])
+                    return this.closingBracketBlock(session, match[1], row, i);
+                return session.getCommentFoldRange(row, i, -1);
+            }
+        };
+    }).call(FoldMode.prototype);
+});
+
+ace.define('ace/mode/diagram', 
+        ["require", 'exports', 'module', 
+        'ace/lib/oop', 'ace/mode/text', 'ace/mode/text_highlight_rules',
+        'ace/tokenizer', 'ace/mode/diagram_highlight_rules', 'ace/mode/folding/cstyle'], 
+        function(acequire, exports, module) {
+    "use strict";
+    var oop = acequire("../lib/oop");
+
+    var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
+    var DynamicLeidenPlusRules = function(a) {
+        this.$rules = a;
+    };
+    oop.inherits(DynamicLeidenPlusRules, TextHighlightRules);
+
+    var TextMode = acequire("./text").Mode;
+    var Tokenizer = acequire("../tokenizer").Tokenizer;
+    var FoldMode = acequire("./folding/cstyle").FoldMode;
+    var Mode = function(a) {
+        var aye = {"start" : [{ token : "string", regex : '".*?"'},]}
+        var highlighter = new DynamicLeidenPlusRules(a);
+        this.foldingRules = new FoldMode();
+        this.$tokenizer = new Tokenizer(highlighter.getRules());
+        this.$keywordList = highlighter.$keywordList;
+    };
+    oop.inherits(Mode, TextMode);
+    (function() {
+        this.lineCommentStart = "'";
+    }).call(Mode.prototype);
+    exports.Mode = Mode;
+});
+
+// flatProps :: (String, [Objects]) => [Objects]
+const flatProps = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
+
+// trim :: String => String
+const trim = s => s.trim();
+
+// split :: String => String => [String]
+const split = a => s => s.split(a);
+
+// escRegExp :: String => String
+const escRegExp = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+// langToken :: (String, String) => Object
+const langToken = t => r => ({token : t, regex: r});
+
+const notEmpty = s => s != '';
+
+const wit = xs => R.filter(notEmpty, R.map(trim, R.chain(split(/{\w+}/), flatProps('template',xs))));
+
+var naw = function (xs) {
+    console.log(wit(xs));
+};
+
+var tokens = xs => R.map(R.compose(langToken("string"), escRegExp), flatProps('attr', xs))
+var tokens2 = xs => R.map(R.compose(langToken("keyword"), escRegExp), wit(xs))
+
+var createH = xs => ({"start" : tokens(xs).concat(tokens2(xs))});
+
+var aye = ace.acequire('ace/mode/diagram');
+
+var setMode = (ed, l) => ed.getSession().setMode(new aye.Mode(createH(l)));
+
+exports.aye = naw;
+exports.setMode = setMode;
+
+},{"ramda":14}],4:[function(require,module,exports){
 var R = require('ramda');
 var ed_tools = require('./editor_tools.js');
 var xs = require('./xsugar.js');
@@ -36873,4 +36921,4 @@ function get_blob() {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[3]);
+},{}]},{},[2]);

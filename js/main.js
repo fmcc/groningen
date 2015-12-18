@@ -8,8 +8,7 @@ require('brace/ext/split.js');
 require('brace/mode/xml');
 require("brace/mode/text");
 
-var hl = require("./highlight")
-
+var mode_tools = require("./mode.js")
 var utils = require('./utils.js');
 var ui = require('./ui.js');
 
@@ -36,18 +35,8 @@ function LeidenEditor(i) {
     env.editor = split.getEditor(0);
     env.editor.setOptions(ed_opt);
 
-    const allProp = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
-    const concat = a => (b,c) => b + a + c;
-    const attrStr = l => R.reduce(concat('|'), "", allProp('attr', l));
-    
-    const trim = s => s.trim();
-    const splitter = a => s => s.split(a);
-
-
-    console.log(R.chain(splitter(/{\w+}/), allProp('template',i.language_definition.elements)));
-
-    hl.addHighlighting(env.editor, i.language_definition.elements);
-
+    mode_tools.aye(i.language_definition.elements);
+    mode_tools.setMode(env.editor, i.language_definition.elements);
     //split.getEditor(1).setOptions(ed_opt);
     split.setSplits(1);
     split.on("focus", function(editor) {
