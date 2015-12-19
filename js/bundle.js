@@ -41,7 +41,6 @@ exports.element_insert = function (editor, lang_elem) {
             var al = "";
             editor.insert(render({text:t, attr:at,alt:al})(lang_elem.template));
             editor.navigateLeft(moveBack(lang_elem.template));
-            editor.indent();
             editor.focus();
         };
     };
@@ -50,16 +49,13 @@ exports.toggleSplit = toggleSplit;
 exports.setAnnotations = setAnnotations;
 exports.openTextInSplit = openTextInSplit;
 
-},{"ramda":14}],2:[function(require,module,exports){
+},{"ramda":12}],2:[function(require,module,exports){
 var $ = require('jquery');
 var R = require('ramda');
 var ace = require('brace');
 
-require('brace/theme/dawn');
-require('brace/theme/monokai');
+require('brace/theme/solarized_light');
 require('brace/ext/split.js');
-require('brace/mode/xml');
-require("brace/mode/text");
 
 var mode_tools = require("./mode.js")
 var utils = require('./utils.js');
@@ -67,9 +63,7 @@ var ui = require('./ui.js');
 
 var Split = ace.acequire("ace/ext/split").Split;
 var container = document.getElementById("leiden-plus-editor");
-var theme = ace.acequire("ace/theme/dawn");
-var theme2 = ace.acequire("ace/theme/monokai");
-var xml_mode = ace.acequire("ace/mode/xml");
+var theme = ace.acequire("ace/theme/solarized_light");
 
 function LeidenEditor(i) {
     // Initialises the Leiden Editor
@@ -77,19 +71,22 @@ function LeidenEditor(i) {
         fontSize: 16,
         maxLines: 200,
         showPrintMargin: false,
-        theme: 'ace/theme/monokai',
-        mode: 'ace/mode/xml',
+        theme: 'ace/theme/solarized_light',
         wrapBehavioursEnabled: true, 
-        showInvisibles: true
+        showInvisibles: true, 
+        tabSize: 2,
+        useSoftTabs: true
     };
 
     var env = {};
     var split = new Split(document.getElementById(i.editor), theme, 2);
     env.editor = split.getEditor(0);
+    // Suppresses error message about deprecated function. 
+    env.editor.$blockScrolling = Infinity;
     env.editor.setOptions(ed_opt);
 
-    mode_tools.aye(i.language_definition.elements);
     mode_tools.setMode(env.editor, i.language_definition.elements);
+    env.editor.setBehavioursEnabled(true);
     //split.getEditor(1).setOptions(ed_opt);
     split.setSplits(1);
     split.on("focus", function(editor) {
@@ -102,77 +99,50 @@ function LeidenEditor(i) {
 
 window.LeidenEditor = LeidenEditor;
 
-},{"./mode.js":3,"./ui.js":4,"./utils.js":5,"brace":8,"brace/ext/split.js":7,"brace/mode/text":9,"brace/mode/xml":10,"brace/theme/dawn":11,"brace/theme/monokai":12,"jquery":13,"ramda":14}],3:[function(require,module,exports){
+},{"./mode.js":3,"./ui.js":4,"./utils.js":5,"brace":8,"brace/ext/split.js":7,"brace/theme/solarized_light":10,"jquery":11,"ramda":12}],3:[function(require,module,exports){
 var R = require('ramda');
+require('brace/mode/xml');
 
-ace.define('ace/mode/folding/cstyle', ["require", 'exports', 'module' , 'ace/lib/oop', 'ace/range', 'ace/mode/folding/fold_mode'], function(acequire, exports, module) {
-    var oop = acequire("../../lib/oop");
-    var Range = acequire("../../range").Range;
-    var BaseFoldMode = acequire("./fold_mode").FoldMode;
-
-    var FoldMode = exports.FoldMode = function(commentRegex) {
-        if (commentRegex) {
-            this.foldingStartMarker = new RegExp(
-                this.foldingStartMarker.source.replace(/\|[^|]*?$/, "|" + commentRegex.start)
-            );
-            this.foldingStopMarker = new RegExp(
-                this.foldingStopMarker.source.replace(/\|[^|]*?$/, "|" + commentRegex.end)
-            );
-        }
-    };
-    oop.inherits(FoldMode, BaseFoldMode);
-    (function() {
-        this.foldingStartMarker = /(\{|\[)[^\}\]]*$|^\s*(\/\*)|^note /;
-        this.foldingStopMarker = /^[^\[\{]*(\}|\])|^[\s\*]*(\*\/)|^end/;
-        this.getFoldWidgetRange = function(session, foldStyle, row) {
-            var line = session.getLine(row);
-            var match = line.match(this.foldingStartMarker);
-            if (match) {
-                var i = match.index;
-                if (match[1])
-                    return this.openingBracketBlock(session, match[1], row, i);
-                return session.getCommentFoldRange(row, i + match[0].length, 1);
-            }
-            if (foldStyle !== "markbeginend")
-                return;
-            var match = line.match(this.foldingStopMarker);
-            if (match) {
-                var i = match.index + match[0].length;
-                if (match[1])
-                    return this.closingBracketBlock(session, match[1], row, i);
-                return session.getCommentFoldRange(row, i, -1);
-            }
-        };
-    }).call(FoldMode.prototype);
-});
-
-ace.define('ace/mode/diagram', 
+ace.define('ace/mode/dynamic_leiden_plus', 
         ["require", 'exports', 'module', 
-        'ace/lib/oop', 'ace/mode/text', 'ace/mode/text_highlight_rules',
-        'ace/tokenizer', 'ace/mode/diagram_highlight_rules', 'ace/mode/folding/cstyle'], 
+        'ace/lib/oop',
+	'ace/lib/lang', 
+        'ace/mode/text',
+        'ace/mode/text_highlight_rules',
+        'ace/mode/xml_highlight_rules',
+        'ace/tokenizer',
+        'ace/mode/behaviour/xml',
+        'ace/mode/folding/xml'], 
         function(acequire, exports, module) {
     "use strict";
     var oop = acequire("../lib/oop");
+    var lang = acequire("ace/lib/lang");
 
+    /*
+     * 
+     */
     var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
     var DynamicLeidenPlusRules = function(a) {
         this.$rules = a;
     };
     oop.inherits(DynamicLeidenPlusRules, TextHighlightRules);
 
-    var TextMode = acequire("./text").Mode;
-    var Tokenizer = acequire("../tokenizer").Tokenizer;
-    var FoldMode = acequire("./folding/cstyle").FoldMode;
+    var TextMode = acequire("ace/mode/text").Mode;
+    var XmlHighlightRules = acequire("ace/mode/xml_highlight_rules").XmlHighlightRules;
+    var Tokenizer = acequire("ace/tokenizer").Tokenizer;
+    var FoldMode = acequire("ace/mode/folding/xml").FoldMode;
+    var Behaviour = acequire("ace/mode/behaviour/xml").XmlBehaviour;
     var Mode = function(a) {
-        var aye = {"start" : [{ token : "string", regex : '".*?"'},]}
-        var highlighter = new DynamicLeidenPlusRules(a);
+        var highlighter = XmlHighlightRules;
         this.foldingRules = new FoldMode();
+        this.$behaviour = new Behaviour();
         this.$tokenizer = new Tokenizer(highlighter.getRules());
-        this.$keywordList = highlighter.$keywordList;
     };
     oop.inherits(Mode, TextMode);
+
     (function() {
-        this.lineCommentStart = "'";
+        // This is key to enabling lang behaviours - found through elimination 
+        this.voidElements = lang.arrayToMap([]);
     }).call(Mode.prototype);
     exports.Mode = Mode;
 });
@@ -200,19 +170,19 @@ var naw = function (xs) {
     console.log(wit(xs));
 };
 
-var tokens = xs => R.map(R.compose(langToken("string"), escRegExp), flatProps('attr', xs))
-var tokens2 = xs => R.map(R.compose(langToken("keyword"), escRegExp), wit(xs))
+var tokens = xs => R.map(R.compose(langToken("string.attribute-value"), escRegExp), flatProps('attr', xs))
+var tokens2 = xs => R.map(R.compose(langToken("meta.tag"), escRegExp), wit(xs))
 
 var createH = xs => ({"start" : tokens(xs).concat(tokens2(xs))});
 
-var aye = ace.acequire('ace/mode/diagram');
+var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 
 var setMode = (ed, l) => ed.getSession().setMode(new aye.Mode(createH(l)));
 
 exports.aye = naw;
 exports.setMode = setMode;
 
-},{"ramda":14}],4:[function(require,module,exports){
+},{"brace/mode/xml":9,"ramda":12}],4:[function(require,module,exports){
 var R = require('ramda');
 var ed_tools = require('./editor_tools.js');
 var xs = require('./xsugar.js');
@@ -248,7 +218,7 @@ exports.createUI = function (loc, env, url, lang) {
                ), constructVariants('attr')(lang.elements));
     };
 
-},{"./editor_tools.js":1,"./xsugar.js":6,"ramda":14}],5:[function(require,module,exports){
+},{"./editor_tools.js":1,"./xsugar.js":6,"ramda":12}],5:[function(require,module,exports){
 var $ = require('jquery');
 var R = require('ramda');
 
@@ -261,7 +231,7 @@ const toList = R.ifElse(R.is(Array), R.identity, R.of);
 exports.ajaxCORSPost = ajaxCORSPost;
 exports.toList = toList;
 
-},{"jquery":13,"ramda":14}],6:[function(require,module,exports){
+},{"jquery":11,"ramda":12}],6:[function(require,module,exports){
 var R = require('ramda');
 
 var utils = require('./utils.js');
@@ -311,7 +281,7 @@ Request Parameters:
 */
 
 
-},{"./editor_tools.js":1,"./utils.js":5,"ramda":14}],7:[function(require,module,exports){
+},{"./editor_tools.js":1,"./utils.js":5,"ramda":12}],7:[function(require,module,exports){
 ace.define("ace/split",["require","exports","module","ace/lib/oop","ace/lib/lang","ace/lib/event_emitter","ace/editor","ace/virtual_renderer","ace/edit_session"], function(acequire, exports, module) {
 "use strict";
 
@@ -18847,10 +18817,7 @@ exports.UndoManager = UndoManager;
             })();
         
 module.exports = window.ace.acequire("ace/ace");
-},{"w3c-blob":15}],9:[function(require,module,exports){
-
-
-},{}],10:[function(require,module,exports){
+},{"w3c-blob":13}],9:[function(require,module,exports){
 ace.define("ace/mode/xml_highlight_rules",["require","exports","module","ace/lib/oop","ace/mode/text_highlight_rules"], function(acequire, exports, module) {
 "use strict";
 
@@ -19514,226 +19481,101 @@ oop.inherits(Mode, TextMode);
 exports.Mode = Mode;
 });
 
-},{}],11:[function(require,module,exports){
-ace.define("ace/theme/dawn",["require","exports","module","ace/lib/dom"], function(acequire, exports, module) {
+},{}],10:[function(require,module,exports){
+ace.define("ace/theme/solarized_light",["require","exports","module","ace/lib/dom"], function(acequire, exports, module) {
 
 exports.isDark = false;
-exports.cssClass = "ace-dawn";
-exports.cssText = ".ace-dawn .ace_gutter {\
-background: #ebebeb;\
+exports.cssClass = "ace-solarized-light";
+exports.cssText = ".ace-solarized-light .ace_gutter {\
+background: #fbf1d3;\
 color: #333\
 }\
-.ace-dawn .ace_print-margin {\
+.ace-solarized-light .ace_print-margin {\
 width: 1px;\
 background: #e8e8e8\
 }\
-.ace-dawn {\
-background-color: #F9F9F9;\
-color: #080808\
+.ace-solarized-light {\
+background-color: #FDF6E3;\
+color: #586E75\
 }\
-.ace-dawn .ace_cursor {\
+.ace-solarized-light .ace_cursor {\
 color: #000000\
 }\
-.ace-dawn .ace_marker-layer .ace_selection {\
-background: rgba(39, 95, 255, 0.30)\
+.ace-solarized-light .ace_marker-layer .ace_selection {\
+background: rgba(7, 54, 67, 0.09)\
 }\
-.ace-dawn.ace_multiselect .ace_selection.ace_start {\
-box-shadow: 0 0 3px 0px #F9F9F9;\
+.ace-solarized-light.ace_multiselect .ace_selection.ace_start {\
+box-shadow: 0 0 3px 0px #FDF6E3;\
 border-radius: 2px\
 }\
-.ace-dawn .ace_marker-layer .ace_step {\
+.ace-solarized-light .ace_marker-layer .ace_step {\
 background: rgb(255, 255, 0)\
 }\
-.ace-dawn .ace_marker-layer .ace_bracket {\
+.ace-solarized-light .ace_marker-layer .ace_bracket {\
 margin: -1px 0 0 -1px;\
-border: 1px solid rgba(75, 75, 126, 0.50)\
+border: 1px solid rgba(147, 161, 161, 0.50)\
 }\
-.ace-dawn .ace_marker-layer .ace_active-line {\
-background: rgba(36, 99, 180, 0.12)\
+.ace-solarized-light .ace_marker-layer .ace_active-line {\
+background: #EEE8D5\
 }\
-.ace-dawn .ace_gutter-active-line {\
-background-color : #dcdcdc\
+.ace-solarized-light .ace_gutter-active-line {\
+background-color : #EDE5C1\
 }\
-.ace-dawn .ace_marker-layer .ace_selected-word {\
-border: 1px solid rgba(39, 95, 255, 0.30)\
+.ace-solarized-light .ace_marker-layer .ace_selected-word {\
+border: 1px solid #073642\
 }\
-.ace-dawn .ace_invisible {\
-color: rgba(75, 75, 126, 0.50)\
+.ace-solarized-light .ace_invisible {\
+color: rgba(147, 161, 161, 0.50)\
 }\
-.ace-dawn .ace_keyword,\
-.ace-dawn .ace_meta {\
-color: #794938\
+.ace-solarized-light .ace_keyword,\
+.ace-solarized-light .ace_meta,\
+.ace-solarized-light .ace_support.ace_class,\
+.ace-solarized-light .ace_support.ace_type {\
+color: #859900\
 }\
-.ace-dawn .ace_constant,\
-.ace-dawn .ace_constant.ace_character,\
-.ace-dawn .ace_constant.ace_character.ace_escape,\
-.ace-dawn .ace_constant.ace_other {\
-color: #811F24\
+.ace-solarized-light .ace_constant.ace_character,\
+.ace-solarized-light .ace_constant.ace_other {\
+color: #CB4B16\
 }\
-.ace-dawn .ace_invalid.ace_illegal {\
-text-decoration: underline;\
-font-style: italic;\
-color: #F8F8F8;\
-background-color: #B52A1D\
+.ace-solarized-light .ace_constant.ace_language {\
+color: #B58900\
 }\
-.ace-dawn .ace_invalid.ace_deprecated {\
-text-decoration: underline;\
-font-style: italic;\
-color: #B52A1D\
+.ace-solarized-light .ace_constant.ace_numeric {\
+color: #D33682\
 }\
-.ace-dawn .ace_support {\
-color: #691C97\
+.ace-solarized-light .ace_fold {\
+background-color: #268BD2;\
+border-color: #586E75\
 }\
-.ace-dawn .ace_support.ace_constant {\
-color: #B4371F\
+.ace-solarized-light .ace_entity.ace_name.ace_function,\
+.ace-solarized-light .ace_entity.ace_name.ace_tag,\
+.ace-solarized-light .ace_support.ace_function,\
+.ace-solarized-light .ace_variable,\
+.ace-solarized-light .ace_variable.ace_language {\
+color: #268BD2\
 }\
-.ace-dawn .ace_fold {\
-background-color: #794938;\
-border-color: #080808\
+.ace-solarized-light .ace_storage {\
+color: #073642\
 }\
-.ace-dawn .ace_list,\
-.ace-dawn .ace_markup.ace_list,\
-.ace-dawn .ace_support.ace_function {\
-color: #693A17\
+.ace-solarized-light .ace_string {\
+color: #2AA198\
 }\
-.ace-dawn .ace_storage {\
-font-style: italic;\
-color: #A71D5D\
+.ace-solarized-light .ace_string.ace_regexp {\
+color: #D30102\
 }\
-.ace-dawn .ace_string {\
-color: #0B6125\
+.ace-solarized-light .ace_comment,\
+.ace-solarized-light .ace_entity.ace_other.ace_attribute-name {\
+color: #93A1A1\
 }\
-.ace-dawn .ace_string.ace_regexp {\
-color: #CF5628\
-}\
-.ace-dawn .ace_comment {\
-font-style: italic;\
-color: #5A525F\
-}\
-.ace-dawn .ace_heading,\
-.ace-dawn .ace_markup.ace_heading {\
-color: #19356D\
-}\
-.ace-dawn .ace_variable {\
-color: #234A97\
-}\
-.ace-dawn .ace_indent-guide {\
-background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQImWNgYGBgYLh/5+x/AAizA4hxNNsZAAAAAElFTkSuQmCC) right repeat-y\
+.ace-solarized-light .ace_indent-guide {\
+background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQImWNgYGBgYHjy8NJ/AAjgA5fzQUmBAAAAAElFTkSuQmCC) right repeat-y\
 }";
 
 var dom = acequire("../lib/dom");
 dom.importCssString(exports.cssText, exports.cssClass);
 });
 
-},{}],12:[function(require,module,exports){
-ace.define("ace/theme/monokai",["require","exports","module","ace/lib/dom"], function(acequire, exports, module) {
-
-exports.isDark = true;
-exports.cssClass = "ace-monokai";
-exports.cssText = ".ace-monokai .ace_gutter {\
-background: #2F3129;\
-color: #8F908A\
-}\
-.ace-monokai .ace_print-margin {\
-width: 1px;\
-background: #555651\
-}\
-.ace-monokai {\
-background-color: #272822;\
-color: #F8F8F2\
-}\
-.ace-monokai .ace_cursor {\
-color: #F8F8F0\
-}\
-.ace-monokai .ace_marker-layer .ace_selection {\
-background: #49483E\
-}\
-.ace-monokai.ace_multiselect .ace_selection.ace_start {\
-box-shadow: 0 0 3px 0px #272822;\
-border-radius: 2px\
-}\
-.ace-monokai .ace_marker-layer .ace_step {\
-background: rgb(102, 82, 0)\
-}\
-.ace-monokai .ace_marker-layer .ace_bracket {\
-margin: -1px 0 0 -1px;\
-border: 1px solid #49483E\
-}\
-.ace-monokai .ace_marker-layer .ace_active-line {\
-background: #202020\
-}\
-.ace-monokai .ace_gutter-active-line {\
-background-color: #272727\
-}\
-.ace-monokai .ace_marker-layer .ace_selected-word {\
-border: 1px solid #49483E\
-}\
-.ace-monokai .ace_invisible {\
-color: #52524d\
-}\
-.ace-monokai .ace_entity.ace_name.ace_tag,\
-.ace-monokai .ace_keyword,\
-.ace-monokai .ace_meta.ace_tag,\
-.ace-monokai .ace_storage {\
-color: #F92672\
-}\
-.ace-monokai .ace_punctuation,\
-.ace-monokai .ace_punctuation.ace_tag {\
-color: #fff\
-}\
-.ace-monokai .ace_constant.ace_character,\
-.ace-monokai .ace_constant.ace_language,\
-.ace-monokai .ace_constant.ace_numeric,\
-.ace-monokai .ace_constant.ace_other {\
-color: #AE81FF\
-}\
-.ace-monokai .ace_invalid {\
-color: #F8F8F0;\
-background-color: #F92672\
-}\
-.ace-monokai .ace_invalid.ace_deprecated {\
-color: #F8F8F0;\
-background-color: #AE81FF\
-}\
-.ace-monokai .ace_support.ace_constant,\
-.ace-monokai .ace_support.ace_function {\
-color: #66D9EF\
-}\
-.ace-monokai .ace_fold {\
-background-color: #A6E22E;\
-border-color: #F8F8F2\
-}\
-.ace-monokai .ace_storage.ace_type,\
-.ace-monokai .ace_support.ace_class,\
-.ace-monokai .ace_support.ace_type {\
-font-style: italic;\
-color: #66D9EF\
-}\
-.ace-monokai .ace_entity.ace_name.ace_function,\
-.ace-monokai .ace_entity.ace_other,\
-.ace-monokai .ace_entity.ace_other.ace_attribute-name,\
-.ace-monokai .ace_variable {\
-color: #A6E22E\
-}\
-.ace-monokai .ace_variable.ace_parameter {\
-font-style: italic;\
-color: #FD971F\
-}\
-.ace-monokai .ace_string {\
-color: #E6DB74\
-}\
-.ace-monokai .ace_comment {\
-color: #75715E\
-}\
-.ace-monokai .ace_indent-guide {\
-background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQImWPQ0FD0ZXBzd/wPAAjVAoxeSgNeAAAAAElFTkSuQmCC) right repeat-y\
-}";
-
-var dom = acequire("../lib/dom");
-dom.importCssString(exports.cssText, exports.cssClass);
-});
-
-},{}],13:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -28945,7 +28787,7 @@ return jQuery;
 
 }));
 
-},{}],14:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 //  Ramda v0.18.0
 //  https://github.com/ramda/ramda
 //  (c) 2013-2015 Scott Sauyet, Michael Hurley, and David Chambers
@@ -36889,7 +36731,7 @@ return jQuery;
 
 }.call(this));
 
-},{}],15:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 (function (global){
 module.exports = get_blob()
 

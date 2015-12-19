@@ -1,73 +1,46 @@
 var R = require('ramda');
+require('brace/mode/xml');
 
-ace.define('ace/mode/folding/cstyle', ["require", 'exports', 'module' , 'ace/lib/oop', 'ace/range', 'ace/mode/folding/fold_mode'], function(acequire, exports, module) {
-    var oop = acequire("../../lib/oop");
-    var Range = acequire("../../range").Range;
-    var BaseFoldMode = acequire("./fold_mode").FoldMode;
-
-    var FoldMode = exports.FoldMode = function(commentRegex) {
-        if (commentRegex) {
-            this.foldingStartMarker = new RegExp(
-                this.foldingStartMarker.source.replace(/\|[^|]*?$/, "|" + commentRegex.start)
-            );
-            this.foldingStopMarker = new RegExp(
-                this.foldingStopMarker.source.replace(/\|[^|]*?$/, "|" + commentRegex.end)
-            );
-        }
-    };
-    oop.inherits(FoldMode, BaseFoldMode);
-    (function() {
-        this.foldingStartMarker = /(\{|\[)[^\}\]]*$|^\s*(\/\*)|^note /;
-        this.foldingStopMarker = /^[^\[\{]*(\}|\])|^[\s\*]*(\*\/)|^end/;
-        this.getFoldWidgetRange = function(session, foldStyle, row) {
-            var line = session.getLine(row);
-            var match = line.match(this.foldingStartMarker);
-            if (match) {
-                var i = match.index;
-                if (match[1])
-                    return this.openingBracketBlock(session, match[1], row, i);
-                return session.getCommentFoldRange(row, i + match[0].length, 1);
-            }
-            if (foldStyle !== "markbeginend")
-                return;
-            var match = line.match(this.foldingStopMarker);
-            if (match) {
-                var i = match.index + match[0].length;
-                if (match[1])
-                    return this.closingBracketBlock(session, match[1], row, i);
-                return session.getCommentFoldRange(row, i, -1);
-            }
-        };
-    }).call(FoldMode.prototype);
-});
-
-ace.define('ace/mode/diagram', 
+ace.define('ace/mode/dynamic_leiden_plus', 
         ["require", 'exports', 'module', 
-        'ace/lib/oop', 'ace/mode/text', 'ace/mode/text_highlight_rules',
-        'ace/tokenizer', 'ace/mode/diagram_highlight_rules', 'ace/mode/folding/cstyle'], 
+        'ace/lib/oop',
+	'ace/lib/lang', 
+        'ace/mode/text',
+        'ace/mode/text_highlight_rules',
+        'ace/mode/xml_highlight_rules',
+        'ace/tokenizer',
+        'ace/mode/behaviour/xml',
+        'ace/mode/folding/xml'], 
         function(acequire, exports, module) {
     "use strict";
     var oop = acequire("../lib/oop");
+    var lang = acequire("ace/lib/lang");
 
+    /*
+     * 
+     */
     var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
     var DynamicLeidenPlusRules = function(a) {
         this.$rules = a;
     };
     oop.inherits(DynamicLeidenPlusRules, TextHighlightRules);
 
-    var TextMode = acequire("./text").Mode;
-    var Tokenizer = acequire("../tokenizer").Tokenizer;
-    var FoldMode = acequire("./folding/cstyle").FoldMode;
+    var TextMode = acequire("ace/mode/text").Mode;
+    var XmlHighlightRules = acequire("ace/mode/xml_highlight_rules").XmlHighlightRules;
+    var Tokenizer = acequire("ace/tokenizer").Tokenizer;
+    var FoldMode = acequire("ace/mode/folding/xml").FoldMode;
+    var Behaviour = acequire("ace/mode/behaviour/xml").XmlBehaviour;
     var Mode = function(a) {
-        var aye = {"start" : [{ token : "string", regex : '".*?"'},]}
-        var highlighter = new DynamicLeidenPlusRules(a);
+        var highlighter = XmlHighlightRules;
         this.foldingRules = new FoldMode();
+        this.$behaviour = new Behaviour();
         this.$tokenizer = new Tokenizer(highlighter.getRules());
-        this.$keywordList = highlighter.$keywordList;
     };
     oop.inherits(Mode, TextMode);
+
     (function() {
-        this.lineCommentStart = "'";
+        // This is key to enabling lang behaviours - found through elimination 
+        this.voidElements = lang.arrayToMap([]);
     }).call(Mode.prototype);
     exports.Mode = Mode;
 });
@@ -95,12 +68,12 @@ var naw = function (xs) {
     console.log(wit(xs));
 };
 
-var tokens = xs => R.map(R.compose(langToken("string"), escRegExp), flatProps('attr', xs))
-var tokens2 = xs => R.map(R.compose(langToken("keyword"), escRegExp), wit(xs))
+var tokens = xs => R.map(R.compose(langToken("string.attribute-value"), escRegExp), flatProps('attr', xs))
+var tokens2 = xs => R.map(R.compose(langToken("meta.tag"), escRegExp), wit(xs))
 
 var createH = xs => ({"start" : tokens(xs).concat(tokens2(xs))});
 
-var aye = ace.acequire('ace/mode/diagram');
+var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 
 var setMode = (ed, l) => ed.getSession().setMode(new aye.Mode(createH(l)));
 

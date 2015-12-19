@@ -40,7 +40,6 @@ exports.element_insert = function (editor, lang_elem) {
             var al = "";
             editor.insert(render({text:t, attr:at,alt:al})(lang_elem.template));
             editor.navigateLeft(moveBack(lang_elem.template));
-            editor.indent();
             editor.focus();
         };
     };
