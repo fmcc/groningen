@@ -4,8 +4,8 @@ var ace = require('brace');
 
 require('brace/theme/solarized_light');
 require('brace/ext/split.js');
+var mode_tools = require('./mode/mode.js');
 
-var mode_tools = require("./mode.js")
 var utils = require('./utils.js');
 var ui = require('./ui.js');
 
@@ -41,6 +41,7 @@ function LeidenEditor(i) {
         env.editor = editor;
     });
     env.split = split;  
+
     ui.createUI($(i.controls), env, i.xsugar_url, i.language_definition);
     window.env = env;
 };
