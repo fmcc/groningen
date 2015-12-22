@@ -103,6 +103,8 @@ window.LeidenEditor = LeidenEditor;
 },{"./mode/mode.js":5,"./ui.js":7,"./utils.js":8,"brace":11,"brace/ext/split.js":10,"brace/theme/solarized_light":12,"jquery":13,"ramda":14}],3:[function(require,module,exports){
 var R = require('ramda');
 
+
+
 ace.define("ace/mode/dynamic_leiden_plus_behaviour",["require","exports","module","ace/lib/oop","ace/mode/behaviour","ace/token_iterator","ace/lib/lang"], function(acequire, exports, module) {
 "use strict";
 
@@ -111,40 +113,24 @@ var Behaviour = acequire("ace/mode/behaviour").Behaviour;
 var TokenIterator = acequire("ace/token_iterator").TokenIterator;
 var lang = acequire("ace/lib/lang");
 
-function is(token, type) {
-    return token.type.lastIndexOf(type + ".xml") > -1;
-}
+const isType = (token, type) => token.type.lastIndexOf(type) > -1;
 
-var DynamicLeidenPlusBehaviour = function () {
+var DynamicLeidenPlusBehaviour = function (elements) {
+            
+    var ends = R.uniq(R.map(R.compose(R.last, R.prop('start')), elements));
+    var aye = (acc, val) => {acc[val.start] = val; return acc;}
+    var start_lookup = R.reduce(aye, {}, elements) 
 
     this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
-
-        if (text == '=') {
-            var position = editor.getCursorPosition();
-            var iterator = new TokenIterator(session, position.row, position.column);
-            var token = iterator.getCurrentToken() || iterator.stepBackward();
-            //if (!token || !(is(token, "tag-name") || is(token, "tag-whitespace") || is(token, "attribute-name") || is(token, "attribute-equals") || is(token, "attribute-value")))
-            //    return;
-            //if (is(token, "reference.attribute-value"))
-            //    return;
-            //if (is(token, "attribute-value")) {
-            //    var firstChar = token.value.charAt(0);
-            //    if (firstChar == '"' || firstChar == "'") {
-            //        var lastChar = token.value.charAt(token.value.length - 1);
-            //        var tokenEnd = iterator.getCurrentTokenColumn() + token.value.length;
-            //        if (tokenEnd > position.column || tokenEnd == position.column && firstChar != lastChar)
-            //            return;
-            //    }
-           // }
-            //while (!is(token, "tag-name")) {
-            //    token = iterator.stepBackward();
-            //}
-
+        console.log(text);
+        var position = editor.getCursorPosition();
+        var iterator = new TokenIterator(session, position.row, position.column);
+        var token = iterator.getCurrentToken() || iterator.stepBackward();
+        if (token && isType(token, "start") && R.not(R.contains(text, ends))) {
+            console.log(token.type);
+            var tag = R.prop(token.value, start_lookup);
             var tokenRow = iterator.getCurrentTokenRow();
             var tokenColumn = iterator.getCurrentTokenColumn();
-            //if (is(iterator.stepBackward(), "end-tag-open"))
-            //    return;
-
             var element = token.value;
             if (tokenRow == position.row)
                 element = element.substring(0, position.column - tokenColumn);
@@ -153,7 +139,7 @@ var DynamicLeidenPlusBehaviour = function () {
                  return;
 
             return {
-               text: "=" + "=>",
+               text: text + R.join(" ",tag.mid) + tag.end,
                selection: [1, 1]
             };
         }
@@ -221,7 +207,7 @@ var oop = acequire("../lib/oop");
 var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
 
 var DynamicLeidenPlusHighlight = function(dyn_rules) {
-    this.$rules = dyn_rules;
+    this.$rules = {"start": dyn_rules};
 };
 oop.inherits(DynamicLeidenPlusHighlight, TextHighlightRules);
 
@@ -234,53 +220,6 @@ var utils = require('../utils.js');
 require('./outdent');
 require('./behaviour');
 require('./highlight');
-
-ace.define('ace/mode/dynamic_leiden_plus', 
-        ["require", 'exports', 'module', 
-        'ace/lib/oop', 
-	'ace/lib/lang', 
-	'ace/mode/text', 
-        'ace/tokenizer', 
-	'ace/mode/behaviour/dynamic_leiden_plus_behaviour', 
-	"ace/mode/dynamic_leiden_plus_highlight",
-	'ace/mode/folding/xml',
-	'ace/worker/worker_client'
-	], 
-        function(acequire, exports, module) {
-	"use strict";
-
-var oop = acequire("ace/lib/oop");
-var lang = acequire("ace/lib/lang");
-var TextMode = acequire("ace/mode/text").Mode;
-var Tokenizer = acequire("ace/tokenizer").Tokenizer;
-
-var MatchingBraceOutdent = acequire("./matching_brace_outdent").MatchingBraceOutdent;
-var DynamicLeidenPlusHighlight = acequire("ace/mode/dynamic_leiden_plus_highlight").DynamicLeidenPlusHighlight;
-var DynamicLeidenPlusBehaviour = acequire("ace/mode/dynamic_leiden_plus_behaviour").DynamicLeidenPlusBehaviour;
-
-var Mode = function(lang_def) {
-    var Highlight = new DynamicLeidenPlusHighlight({"start": generateTags(lang_def.elements)});
-    this.$tokenizer = new Tokenizer(Highlight.getRules());
-    this.$outdent = new MatchingBraceOutdent();
-    this.$behaviour = new DynamicLeidenPlusBehaviour();
-};
-
-oop.inherits(Mode, TextMode);
-
-(function() {
-    this.voidElements = lang.arrayToMap([]);
-
-    //this.checkOutdent = function(state, line, input) {
-    //    return this.$outdent.checkOutdent(line, input);
-    //};
-
-    //this.autoOutdent = function(state, doc, row) {
-    //    this.$outdent.autoOutdent(doc, row);
-    //};
-}).call(Mode.prototype);
-
-exports.Mode = Mode;
-});
 
 // flatProps :: (String, [Objects]) => [Objects]
 const flatProps = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
@@ -337,9 +276,59 @@ const generateMetaTags = xs => R.map(generateHighlightToken("meta.tag."),
 // generateAttrTags :: [String] => [Object]
 const generateAttrTags = xs => R.map(R.compose(generateHighlightToken(""), R.pair("string.attribute-value")), flatProps('attr', xs)); 
 
+// tagGenerator :: ([Object], [String]) => [Object]
 const tagGenerator = (xs, ys) => R.flatten([generateAttrTags(xs), generateMetaTags(ys), generateConstantTags(ys)]);
 
+// generateTags :: [Object] => [Object]
 const generateTags = xs => tagGenerator(xs, allSplitTemplates(xs));
+
+ace.define('ace/mode/dynamic_leiden_plus', 
+        ["require", 'exports', 'module', 
+        'ace/lib/oop', 
+	'ace/lib/lang', 
+	'ace/mode/text', 
+        'ace/tokenizer', 
+	'ace/mode/behaviour/dynamic_leiden_plus_behaviour', 
+	"ace/mode/dynamic_leiden_plus_highlight",
+	'ace/mode/folding/xml',
+	'ace/worker/worker_client'
+	], 
+        function(acequire, exports, module) {
+	"use strict";
+
+var oop = acequire("ace/lib/oop");
+var lang = acequire("ace/lib/lang");
+var TextMode = acequire("ace/mode/text").Mode;
+var Tokenizer = acequire("ace/tokenizer").Tokenizer;
+
+var MatchingBraceOutdent = acequire("./matching_brace_outdent").MatchingBraceOutdent;
+var DynamicLeidenPlusHighlight = acequire("ace/mode/dynamic_leiden_plus_highlight").DynamicLeidenPlusHighlight;
+var DynamicLeidenPlusBehaviour = acequire("ace/mode/dynamic_leiden_plus_behaviour").DynamicLeidenPlusBehaviour;
+
+var Mode = function(lang_def) {
+    var Highlight = new DynamicLeidenPlusHighlight(generateTags(lang_def.elements));
+    this.$tokenizer = new Tokenizer(Highlight.getRules());
+    this.$outdent = new MatchingBraceOutdent();
+    this.$behaviour = new DynamicLeidenPlusBehaviour(R.map(metaTagToken, R.filter(notSingleton, allSplitTemplates(lang_def.elements))));
+};
+
+oop.inherits(Mode, TextMode);
+
+(function() {
+    this.voidElements = lang.arrayToMap([]);
+
+    //this.checkOutdent = function(state, line, input) {
+    //    return this.$outdent.checkOutdent(line, input);
+    //};
+
+    //this.autoOutdent = function(state, doc, row) {
+    //    this.$outdent.autoOutdent(doc, row);
+    //};
+}).call(Mode.prototype);
+
+exports.Mode = Mode;
+});
+
 
 var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 

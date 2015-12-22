@@ -4,53 +4,6 @@ require('./outdent');
 require('./behaviour');
 require('./highlight');
 
-ace.define('ace/mode/dynamic_leiden_plus', 
-        ["require", 'exports', 'module', 
-        'ace/lib/oop', 
-	'ace/lib/lang', 
-	'ace/mode/text', 
-        'ace/tokenizer', 
-	'ace/mode/behaviour/dynamic_leiden_plus_behaviour', 
-	"ace/mode/dynamic_leiden_plus_highlight",
-	'ace/mode/folding/xml',
-	'ace/worker/worker_client'
-	], 
-        function(acequire, exports, module) {
-	"use strict";
-
-var oop = acequire("ace/lib/oop");
-var lang = acequire("ace/lib/lang");
-var TextMode = acequire("ace/mode/text").Mode;
-var Tokenizer = acequire("ace/tokenizer").Tokenizer;
-
-var MatchingBraceOutdent = acequire("./matching_brace_outdent").MatchingBraceOutdent;
-var DynamicLeidenPlusHighlight = acequire("ace/mode/dynamic_leiden_plus_highlight").DynamicLeidenPlusHighlight;
-var DynamicLeidenPlusBehaviour = acequire("ace/mode/dynamic_leiden_plus_behaviour").DynamicLeidenPlusBehaviour;
-
-var Mode = function(lang_def) {
-    var Highlight = new DynamicLeidenPlusHighlight({"start": generateTags(lang_def.elements)});
-    this.$tokenizer = new Tokenizer(Highlight.getRules());
-    this.$outdent = new MatchingBraceOutdent();
-    this.$behaviour = new DynamicLeidenPlusBehaviour();
-};
-
-oop.inherits(Mode, TextMode);
-
-(function() {
-    this.voidElements = lang.arrayToMap([]);
-
-    //this.checkOutdent = function(state, line, input) {
-    //    return this.$outdent.checkOutdent(line, input);
-    //};
-
-    //this.autoOutdent = function(state, doc, row) {
-    //    this.$outdent.autoOutdent(doc, row);
-    //};
-}).call(Mode.prototype);
-
-exports.Mode = Mode;
-});
-
 // flatProps :: (String, [Objects]) => [Objects]
 const flatProps = (a, xs) => R.chain(R.prop(a), R.filter(R.has(a), xs));
 
@@ -106,9 +59,59 @@ const generateMetaTags = xs => R.map(generateHighlightToken("meta.tag."),
 // generateAttrTags :: [String] => [Object]
 const generateAttrTags = xs => R.map(R.compose(generateHighlightToken(""), R.pair("string.attribute-value")), flatProps('attr', xs)); 
 
+// tagGenerator :: ([Object], [String]) => [Object]
 const tagGenerator = (xs, ys) => R.flatten([generateAttrTags(xs), generateMetaTags(ys), generateConstantTags(ys)]);
 
+// generateTags :: [Object] => [Object]
 const generateTags = xs => tagGenerator(xs, allSplitTemplates(xs));
+
+ace.define('ace/mode/dynamic_leiden_plus', 
+        ["require", 'exports', 'module', 
+        'ace/lib/oop', 
+	'ace/lib/lang', 
+	'ace/mode/text', 
+        'ace/tokenizer', 
+	'ace/mode/behaviour/dynamic_leiden_plus_behaviour', 
+	"ace/mode/dynamic_leiden_plus_highlight",
+	'ace/mode/folding/xml',
+	'ace/worker/worker_client'
+	], 
+        function(acequire, exports, module) {
+	"use strict";
+
+var oop = acequire("ace/lib/oop");
+var lang = acequire("ace/lib/lang");
+var TextMode = acequire("ace/mode/text").Mode;
+var Tokenizer = acequire("ace/tokenizer").Tokenizer;
+
+var MatchingBraceOutdent = acequire("./matching_brace_outdent").MatchingBraceOutdent;
+var DynamicLeidenPlusHighlight = acequire("ace/mode/dynamic_leiden_plus_highlight").DynamicLeidenPlusHighlight;
+var DynamicLeidenPlusBehaviour = acequire("ace/mode/dynamic_leiden_plus_behaviour").DynamicLeidenPlusBehaviour;
+
+var Mode = function(lang_def) {
+    var Highlight = new DynamicLeidenPlusHighlight(generateTags(lang_def.elements));
+    this.$tokenizer = new Tokenizer(Highlight.getRules());
+    this.$outdent = new MatchingBraceOutdent();
+    this.$behaviour = new DynamicLeidenPlusBehaviour(R.map(metaTagToken, R.filter(notSingleton, allSplitTemplates(lang_def.elements))));
+};
+
+oop.inherits(Mode, TextMode);
+
+(function() {
+    this.voidElements = lang.arrayToMap([]);
+
+    //this.checkOutdent = function(state, line, input) {
+    //    return this.$outdent.checkOutdent(line, input);
+    //};
+
+    //this.autoOutdent = function(state, doc, row) {
+    //    this.$outdent.autoOutdent(doc, row);
+    //};
+}).call(Mode.prototype);
+
+exports.Mode = Mode;
+});
+
 
 var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 

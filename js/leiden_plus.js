@@ -42,10 +42,6 @@ leiden_plus_translation = {
         name: "gap", 
         template: "..."
     },
-    {
-        name: "naw", 
-        template: "NAW"
-    }
     ]
 }
 

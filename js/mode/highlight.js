@@ -5,7 +5,7 @@ var oop = acequire("../lib/oop");
 var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
 
 var DynamicLeidenPlusHighlight = function(dyn_rules) {
-    this.$rules = dyn_rules;
+    this.$rules = {"start": dyn_rules};
 };
 oop.inherits(DynamicLeidenPlusHighlight, TextHighlightRules);
 

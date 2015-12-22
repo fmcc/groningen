@@ -1,5 +1,7 @@
 var R = require('ramda');
 
+
+
 ace.define("ace/mode/dynamic_leiden_plus_behaviour",["require","exports","module","ace/lib/oop","ace/mode/behaviour","ace/token_iterator","ace/lib/lang"], function(acequire, exports, module) {
 "use strict";
 
@@ -8,40 +10,24 @@ var Behaviour = acequire("ace/mode/behaviour").Behaviour;
 var TokenIterator = acequire("ace/token_iterator").TokenIterator;
 var lang = acequire("ace/lib/lang");
 
-function is(token, type) {
-    return token.type.lastIndexOf(type + ".xml") > -1;
-}
+const isType = (token, type) => token.type.lastIndexOf(type) > -1;
 
-var DynamicLeidenPlusBehaviour = function () {
+var DynamicLeidenPlusBehaviour = function (elements) {
+            
+    var ends = R.uniq(R.map(R.compose(R.last, R.prop('start')), elements));
+    var aye = (acc, val) => {acc[val.start] = val; return acc;}
+    var start_lookup = R.reduce(aye, {}, elements) 
 
     this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
-
-        if (text == '=') {
-            var position = editor.getCursorPosition();
-            var iterator = new TokenIterator(session, position.row, position.column);
-            var token = iterator.getCurrentToken() || iterator.stepBackward();
-            //if (!token || !(is(token, "tag-name") || is(token, "tag-whitespace") || is(token, "attribute-name") || is(token, "attribute-equals") || is(token, "attribute-value")))
-            //    return;
-            //if (is(token, "reference.attribute-value"))
-            //    return;
-            //if (is(token, "attribute-value")) {
-            //    var firstChar = token.value.charAt(0);
-            //    if (firstChar == '"' || firstChar == "'") {
-            //        var lastChar = token.value.charAt(token.value.length - 1);
-            //        var tokenEnd = iterator.getCurrentTokenColumn() + token.value.length;
-            //        if (tokenEnd > position.column || tokenEnd == position.column && firstChar != lastChar)
-            //            return;
-            //    }
-           // }
-            //while (!is(token, "tag-name")) {
-            //    token = iterator.stepBackward();
-            //}
-
+        console.log(text);
+        var position = editor.getCursorPosition();
+        var iterator = new TokenIterator(session, position.row, position.column);
+        var token = iterator.getCurrentToken() || iterator.stepBackward();
+        if (token && isType(token, "start") && R.not(R.contains(text, ends))) {
+            console.log(token.type);
+            var tag = R.prop(token.value, start_lookup);
             var tokenRow = iterator.getCurrentTokenRow();
             var tokenColumn = iterator.getCurrentTokenColumn();
-            //if (is(iterator.stepBackward(), "end-tag-open"))
-            //    return;
-
             var element = token.value;
             if (tokenRow == position.row)
                 element = element.substring(0, position.column - tokenColumn);
@@ -50,7 +36,7 @@ var DynamicLeidenPlusBehaviour = function () {
                  return;
 
             return {
-               text: "=" + "=>",
+               text: text + R.join(" ",tag.mid) + tag.end,
                selection: [1, 1]
             };
         }
