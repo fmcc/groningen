@@ -7,5 +7,8 @@ const ajaxCORSPost = (u, s, e) => (d) => $.ajax({url:u, type:"POST", crossDomain
 // 
 const toList = R.ifElse(R.is(Array), R.identity, R.of);
 
+const pairProduct = a => R.xprod(toList(a[0]), toList(a[1]));
+
 exports.ajaxCORSPost = ajaxCORSPost;
 exports.toList = toList;
+exports.pairProduct = pairProduct;

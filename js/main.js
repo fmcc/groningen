@@ -33,7 +33,7 @@ function LeidenEditor(i) {
     env.editor.$blockScrolling = Infinity;
     env.editor.setOptions(ed_opt);
 
-    mode_tools.setMode(env.editor, i.language_definition.elements);
+    mode_tools.setMode(env.editor, i.language_definition);
     env.editor.setBehavioursEnabled(true);
     //split.getEditor(1).setOptions(ed_opt);
     split.setSplits(1);

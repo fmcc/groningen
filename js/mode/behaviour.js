@@ -1,3 +1,5 @@
+var R = require('ramda');
+
 ace.define("ace/mode/dynamic_leiden_plus_behaviour",["require","exports","module","ace/lib/oop","ace/mode/behaviour","ace/token_iterator","ace/lib/lang"], function(acequire, exports, module) {
 "use strict";
 
@@ -13,6 +15,7 @@ function is(token, type) {
 var DynamicLeidenPlusBehaviour = function () {
 
     this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
+
         if (text == '=') {
             var position = editor.getCursorPosition();
             var iterator = new TokenIterator(session, position.row, position.column);
