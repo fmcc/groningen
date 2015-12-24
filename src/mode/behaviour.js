@@ -1,7 +1,5 @@
 var R = require('ramda');
 
-
-
 ace.define("ace/mode/dynamic_leiden_plus_behaviour",["require","exports","module","ace/lib/oop","ace/mode/behaviour","ace/token_iterator","ace/lib/lang"], function(acequire, exports, module) {
 "use strict";
 
@@ -12,34 +10,79 @@ var lang = acequire("ace/lib/lang");
 
 const isType = (token, type) => token.type.lastIndexOf(type) > -1;
 
+// splt :: String => [String]
+const splt = R.split('');
+
+// tagChars :: String => Function 
+const tagChars = t => R.compose(R.uniq, R.chain(R.compose(splt, R.prop(t))))
+
+// splitProp :: String => Function
+const splitProp = p => R.compose(splt, R.prop(p))
+
+// propLenSort :: String => Function
+const propLenSort = p => R.sortBy(R.compose(R.length, R.prop(p)));
+
+// trieAddProp :: String => (Object, Object) => Object
+const trieAddProp = p => (t, c) => R.assocPath(splitProp(p)(c), c, t);
+
+// buildPropTrie :: (String, [Object}) => Object
+const buildPropTrie = (p, xs) => R.reduce(trieAddProp(p), {}, propLenSort(p)(xs));
+
+const queryTrie = t => s => R.path(splt(s), t);
+
+// objLenEq = Int => Function
+const objLenEQ = x => R.compose(R.equals(x), R.length, R.keys);
+
+const isLangObj = R.allPass([R.prop('start'), objLenEQ(3)]);
+
 var DynamicLeidenPlusBehaviour = function (elements) {
             
-    var ends = R.uniq(R.map(R.compose(R.last, R.prop('start')), elements));
-    var aye = (acc, val) => {acc[val.start] = val; return acc;}
-    var start_lookup = R.reduce(aye, {}, elements) 
+    var start_trie = buildPropTrie('start', elements);
+    var start_chars = tagChars('start')(elements);
+    var q = queryTrie(start_trie);
+
+    var insertTag = function (iter, pos, text, token, tag) {
+        var element = token.value;
+        if (iter.getCurrentTokenRow() == pos.row)
+            element = element.substring(0, pos.column - iter.getCurrentTokenColumn());
+        var wit =  {
+            text: text + R.join(" ", tag.mid) + tag.end,
+            selection: [1, 1]
+        };
+        return wit;
+    };
+
 
     this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
-        console.log(text);
-        var position = editor.getCursorPosition();
-        var iterator = new TokenIterator(session, position.row, position.column);
-        var token = iterator.getCurrentToken() || iterator.stepBackward();
-        if (token && isType(token, "start") && R.not(R.contains(text, ends))) {
-            console.log(token.type);
-            var tag = R.prop(token.value, start_lookup);
-            var tokenRow = iterator.getCurrentTokenRow();
-            var tokenColumn = iterator.getCurrentTokenColumn();
-            var element = token.value;
-            if (tokenRow == position.row)
-                element = element.substring(0, position.column - tokenColumn);
-
-            if (this.voidElements.hasOwnProperty(element.toLowerCase()))
-                 return;
-
-            return {
-               text: text + R.join(" ",tag.mid) + tag.end,
-               selection: [1, 1]
-            };
+        var p = editor.getCursorPosition();
+        var i = new TokenIterator(session, p.row, p.column);
+        var t = i.getCurrentToken() || i.stepBackward();
+        // return if this is the first character typed
+        if (!t) {return};
+        // if the character typed is not one that is in tags
+        if (R.not(R.contains(text, start_chars))) {
+            if (isType(t, "start")) {
+                return insertTag(i, p, text, t, q(t.value));
+            } else {
+                console.log(1);
+                return;
+            }
+        } else {
+            var c_tag = q(t.value + text);
+            if (c_tag && isLangObj(c_tag)) {
+                return; 
+            } else {
+                var tag = q(text);
+                var t_tag = q(t.value);
+                console.log(t.value);
+                console.log(c_tag);
+                console.log(t_tag);
+            }
         }
+        // if just the text is the tag, then wait. 
+        // if the text and token can't be anything, use the token value
+        // if the text and token could be something, wait
+        // if the text and token are something, and nothing else, use that.
     });
 
     this.add("autoindent", "insertion", function (state, action, editor, session, text) {

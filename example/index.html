@@ -9,8 +9,12 @@
 
     <title>Leiden plus editor example</title>
 
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/navbar-fixed-top.css" rel="stylesheet">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -18,20 +22,22 @@
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
     <style>
-    body { padding-top: 0;}
-    #leiden-plus-editor {
-      position: relative;
-      height: 600px;
-    }
-    #leiden-plus-control > button {
-      margin: 5px 0 5px 5px;  
-    }
-    .jumbotron {
-      padding-top: 1px;
-      padding-bottom: 0;
-      margin-bottom: 0;
-    }
-    
+      body {
+        min-height: 2000px;
+        padding-top: 0;
+      }
+      #leiden-plus-editor {
+        position: relative;
+        height: 600px;
+      }
+      #leiden-plus-control > button {
+        margin: 5px 0 5px 5px;  
+      }
+      .jumbotron {
+        padding-top: 1px;
+        padding-bottom: 0;
+        margin-bottom: 0;
+      }
     </style>
   </head>
 
@@ -44,9 +50,7 @@
     </div>
     <div id="leiden-plus-editor"> </div>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/bundle.js"></script>
+    <script src="js/groningen.js"></script>
     <script src="js/leiden_plus.js"></script>
 
     <script type="text/javascript" charset="utf-8">

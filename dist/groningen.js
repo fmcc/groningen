@@ -3,19 +3,19 @@ var R = require('ramda');
 
 /* Template formatting */
 // bracesWrap :: String -> String
-const bracesWrap = x => `{${ x }}`;
+const bracesWrap = (x) => `{${x}}`;
 
 // replaceLangPlaceholder :: (String, String, String) -> String
-const replaceLangPlaceholder = (placeholder, insert, template) => template.replace(bracesWrap(placeholder), insert);
+const replaceLangPlaceholder = (placeholder, insert, template) => template.replace(bracesWrap(placeholder), insert); 
 
-// render :: Object -> Function
-const render = a => R.compose(R.apply(R.compose), R.map(R.partial(replaceLangPlaceholder)))(R.toPairs(a));
+// render :: Object -> Function 
+const render = (a) => R.compose(R.apply(R.compose), R.map(R.partial(replaceLangPlaceholder)))(R.toPairs(a))
 
-//
+// 
 const moveBack = t => t.length - t.lastIndexOf('}') - 1;
 
 // twoSplit :: Object AceSplit => Boolean
-const twoSplits = split => split.getSplits() == 2 ? true : false;
+const twoSplits = (split) => (split.getSplits() == 2 ? true : false);
 
 // setSplit :: Int => Object AceSplit => IO DOM
 const setSplit = n => split => split.setSplits(n);
@@ -36,14 +36,14 @@ const openTextInSplit = env => t => [openSplit(env.split), setEditorText(env.spl
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
-        var t = editor.getSelectedText();
-        var at = R.propOr("", "attr", lang_elem);
-        var al = "";
-        editor.insert(render({ text: t, attr: at, alt: al })(lang_elem.template));
-        editor.navigateLeft(moveBack(lang_elem.template));
-        editor.focus();
+            var t = editor.getSelectedText();
+            var at = R.propOr("", "attr", lang_elem);
+            var al = "";
+            editor.insert(render({text:t, attr:at,alt:al})(lang_elem.template));
+            editor.navigateLeft(moveBack(lang_elem.template));
+            editor.focus();
+        };
     };
-};
 
 exports.toggleSplit = toggleSplit;
 exports.setAnnotations = setAnnotations;
@@ -67,13 +67,13 @@ var theme = ace.acequire("ace/theme/solarized_light");
 
 function LeidenEditor(i) {
     // Initialises the Leiden Editor
-    var ed_opt = {
+    var ed_opt = { 
         fontSize: 16,
         maxLines: 200,
         showPrintMargin: false,
         theme: 'ace/theme/solarized_light',
-        wrapBehavioursEnabled: true,
-        showInvisibles: true,
+        wrapBehavioursEnabled: true, 
+        showInvisibles: true, 
         tabSize: 2,
         useSoftTabs: true
     };
@@ -81,7 +81,7 @@ function LeidenEditor(i) {
     var env = {};
     var split = new Split(document.getElementById(i.editor), theme, 2);
     env.editor = split.getEditor(0);
-    // Suppresses error message about deprecated function.
+    // Suppresses error message about deprecated function. 
     env.editor.$blockScrolling = Infinity;
     env.editor.setOptions(ed_opt);
 
@@ -89,10 +89,10 @@ function LeidenEditor(i) {
     env.editor.setBehavioursEnabled(true);
     //split.getEditor(1).setOptions(ed_opt);
     split.setSplits(1);
-    split.on("focus", function (editor) {
+    split.on("focus", function(editor) {
         env.editor = editor;
     });
-    env.split = split;
+    env.split = split;  
 
     ui.createUI($(i.controls), env, i.xsugar_url, i.language_definition);
     window.env = env;
@@ -103,110 +103,158 @@ window.LeidenEditor = LeidenEditor;
 },{"./mode/mode.js":5,"./ui.js":7,"./utils.js":8,"brace":11,"brace/ext/split.js":10,"brace/theme/solarized_light":12,"jquery":13,"ramda":14}],3:[function(require,module,exports){
 var R = require('ramda');
 
-ace.define("ace/mode/dynamic_leiden_plus_behaviour", ["require", "exports", "module", "ace/lib/oop", "ace/mode/behaviour", "ace/token_iterator", "ace/lib/lang"], function (acequire, exports, module) {
-    "use strict";
+ace.define("ace/mode/dynamic_leiden_plus_behaviour",["require","exports","module","ace/lib/oop","ace/mode/behaviour","ace/token_iterator","ace/lib/lang"], function(acequire, exports, module) {
+"use strict";
 
-    var oop = acequire("ace/lib/oop");
-    var Behaviour = acequire("ace/mode/behaviour").Behaviour;
-    var TokenIterator = acequire("ace/token_iterator").TokenIterator;
-    var lang = acequire("ace/lib/lang");
+var oop = acequire("ace/lib/oop");
+var Behaviour = acequire("ace/mode/behaviour").Behaviour;
+var TokenIterator = acequire("ace/token_iterator").TokenIterator;
+var lang = acequire("ace/lib/lang");
 
-    const isType = (token, type) => token.type.lastIndexOf(type) > -1;
+const isType = (token, type) => token.type.lastIndexOf(type) > -1;
 
-    var DynamicLeidenPlusBehaviour = function (elements) {
+// splt :: String => [String]
+const splt = R.split('');
 
-        var ends = R.uniq(R.map(R.compose(R.last, R.prop('start')), elements));
-        var aye = (acc, val) => {
-            acc[val.start] = val;return acc;
+// tagChars :: String => Function 
+const tagChars = t => R.compose(R.uniq, R.chain(R.compose(splt, R.prop(t))))
+
+// splitProp :: String => Function
+const splitProp = p => R.compose(splt, R.prop(p))
+
+// propLenSort :: String => Function
+const propLenSort = p => R.sortBy(R.compose(R.length, R.prop(p)));
+
+// trieAddProp :: String => (Object, Object) => Object
+const trieAddProp = p => (t, c) => R.assocPath(splitProp(p)(c), c, t);
+
+// buildPropTrie :: (String, [Object}) => Object
+const buildPropTrie = (p, xs) => R.reduce(trieAddProp(p), {}, propLenSort(p)(xs));
+
+const queryTrie = t => s => R.path(splt(s), t);
+
+// objLenEq = Int => Function
+const objLenEQ = x => R.compose(R.equals(x), R.length, R.keys);
+
+const isLangObj = R.allPass([R.prop('start'), objLenEQ(3)]);
+
+var DynamicLeidenPlusBehaviour = function (elements) {
+            
+    var start_trie = buildPropTrie('start', elements);
+    var start_chars = tagChars('start')(elements);
+    var q = queryTrie(start_trie);
+
+    var insertTag = function (iter, pos, text, token, tag) {
+        var element = token.value;
+        if (iter.getCurrentTokenRow() == pos.row)
+            element = element.substring(0, pos.column - iter.getCurrentTokenColumn());
+        var wit =  {
+            text: text + R.join(" ", tag.mid) + tag.end,
+            selection: [1, 1]
         };
-        var start_lookup = R.reduce(aye, {}, elements);
+        return wit;
+    };
 
-        this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
-            console.log(text);
-            var position = editor.getCursorPosition();
-            var iterator = new TokenIterator(session, position.row, position.column);
-            var token = iterator.getCurrentToken() || iterator.stepBackward();
-            if (token && isType(token, "start") && R.not(R.contains(text, ends))) {
-                console.log(token.type);
-                var tag = R.prop(token.value, start_lookup);
-                var tokenRow = iterator.getCurrentTokenRow();
-                var tokenColumn = iterator.getCurrentTokenColumn();
-                var element = token.value;
-                if (tokenRow == position.row) element = element.substring(0, position.column - tokenColumn);
 
-                if (this.voidElements.hasOwnProperty(element.toLowerCase())) return;
-
-                return {
-                    text: text + R.join(" ", tag.mid) + tag.end,
-                    selection: [1, 1]
-                };
+    this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
+        var p = editor.getCursorPosition();
+        var i = new TokenIterator(session, p.row, p.column);
+        var t = i.getCurrentToken() || i.stepBackward();
+        // return if this is the first character typed
+        if (!t) {return};
+        // if the character typed is not one that is in tags
+        if (R.not(R.contains(text, start_chars))) {
+            if (isType(t, "start")) {
+                return insertTag(i, p, text, t, q(t.value));
+            } else {
+                console.log(1);
+                return;
             }
-        });
+        } else {
+            var c_tag = q(t.value + text);
+            if (c_tag && isLangObj(c_tag)) {
+                return; 
+            } else {
+                var tag = q(text);
+                var t_tag = q(t.value);
+                console.log(t.value);
+                console.log(c_tag);
+                console.log(t_tag);
+            }
+        }
+        // if just the text is the tag, then wait. 
+        // if the text and token can't be anything, use the token value
+        // if the text and token could be something, wait
+        // if the text and token are something, and nothing else, use that.
+    });
 
-        this.add("autoindent", "insertion", function (state, action, editor, session, text) {
-            if (text == "\n") {
-                var cursor = editor.getCursorPosition();
-                var line = session.getLine(cursor.row);
-                var iterator = new TokenIterator(session, cursor.row, cursor.column);
-                var token = iterator.getCurrentToken();
+    this.add("autoindent", "insertion", function (state, action, editor, session, text) {
+        if (text == "\n") {
+            var cursor = editor.getCursorPosition();
+            var line = session.getLine(cursor.row);
+            var iterator = new TokenIterator(session, cursor.row, cursor.column);
+            var token = iterator.getCurrentToken();
 
-                if (token && token.type.indexOf("tag-close") !== -1) {
-                    if (token.value == "/>") return;
-                    while (token && token.type.indexOf("tag-name") === -1) {
-                        token = iterator.stepBackward();
-                    }
-
-                    if (!token) {
-                        return;
-                    }
-
-                    var tag = token.value;
-                    var row = iterator.getCurrentTokenRow();
+            if (token && token.type.indexOf("tag-close") !== -1) {
+                if (token.value == "/>")
+                    return;
+                while (token && token.type.indexOf("tag-name") === -1) {
                     token = iterator.stepBackward();
-                    if (!token || token.type.indexOf("end-tag") !== -1) {
-                        return;
-                    }
+                }
 
-                    if (this.voidElements && !this.voidElements[tag]) {
-                        var nextToken = session.getTokenAt(cursor.row, cursor.column + 1);
-                        var line = session.getLine(row);
-                        var nextIndent = this.$getIndent(line);
-                        var indent = nextIndent + session.getTabString();
+                if (!token) {
+                    return;
+                }
 
-                        if (nextToken && nextToken.value === "</") {
-                            return {
-                                text: "\n" + indent + "\n" + nextIndent,
-                                selection: [1, indent.length, 1, indent.length]
-                            };
-                        } else {
-                            return {
-                                text: "\n" + indent
-                            };
-                        }
+                var tag = token.value;
+                var row = iterator.getCurrentTokenRow();
+                token = iterator.stepBackward();
+                if (!token || token.type.indexOf("end-tag") !== -1) {
+                    return;
+                }
+
+                if (this.voidElements && !this.voidElements[tag]) {
+                    var nextToken = session.getTokenAt(cursor.row, cursor.column+1);
+                    var line = session.getLine(row);
+                    var nextIndent = this.$getIndent(line);
+                    var indent = nextIndent + session.getTabString();
+
+                    if (nextToken && nextToken.value === "</") {
+                        return {
+                            text: "\n" + indent + "\n" + nextIndent,
+                            selection: [1, indent.length, 1, indent.length]
+                        };
+                    } else {
+                        return {
+                            text: "\n" + indent
+                        };
                     }
                 }
             }
-        });
-    };
+        }
+    });
 
-    oop.inherits(DynamicLeidenPlusBehaviour, Behaviour);
+};
 
-    exports.DynamicLeidenPlusBehaviour = DynamicLeidenPlusBehaviour;
+oop.inherits(DynamicLeidenPlusBehaviour, Behaviour);
+
+exports.DynamicLeidenPlusBehaviour = DynamicLeidenPlusBehaviour;
 });
 
+
 },{"ramda":14}],4:[function(require,module,exports){
-ace.define("ace/mode/dynamic_leiden_plus_highlight", ["require", "exports", "module", "ace/lib/oop", "ace/mode/text_highlight_rules"], function (acequire, exports, module) {
-    "use strict";
+ace.define("ace/mode/dynamic_leiden_plus_highlight", ["require","exports","module","ace/lib/oop","ace/mode/text_highlight_rules"], function(acequire, exports, module) {
+"use strict";
 
-    var oop = acequire("../lib/oop");
-    var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
+var oop = acequire("../lib/oop");
+var TextHighlightRules = acequire("./text_highlight_rules").TextHighlightRules;
 
-    var DynamicLeidenPlusHighlight = function (dyn_rules) {
-        this.$rules = { "start": dyn_rules };
-    };
-    oop.inherits(DynamicLeidenPlusHighlight, TextHighlightRules);
+var DynamicLeidenPlusHighlight = function(dyn_rules) {
+    this.$rules = {"start": dyn_rules};
+};
+oop.inherits(DynamicLeidenPlusHighlight, TextHighlightRules);
 
-    exports.DynamicLeidenPlusHighlight = DynamicLeidenPlusHighlight;
+exports.DynamicLeidenPlusHighlight = DynamicLeidenPlusHighlight;
 });
 
 },{}],5:[function(require,module,exports){
@@ -229,7 +277,7 @@ const split = a => s => s.split(a);
 const escRegExp = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // highlightToken :: (String, String) => Object
-const highlightToken = (t, r) => ({ token: t, regex: escRegExp(r) });
+const highlightToken = (t, r) => ({token : t, regex: escRegExp(r)});
 
 // notEmpty :: String => Boolean
 const notEmpty = s => s != '';
@@ -238,34 +286,38 @@ const notEmpty = s => s != '';
 const nonEmptyStrings = R.compose(R.filter(notEmpty), R.map(trim));
 
 // splitTemplate :: Object => [String]
-const splitTemplate = R.compose(nonEmptyStrings, split(/{\w+}/), R.propOr('', 'template'));
+const splitTemplate = R.compose(nonEmptyStrings, split(/{\w+}/), R.propOr('','template'));
 
 // allSplitTemplates :: [Object] => [String]
 const allSplitTemplates = R.map(splitTemplate);
 
 // metaTagToken :: [String] => Object
-const metaTagToken = a => ({ start: a[0], end: a[a.length - 1], mid: a.slice(1, a.length - 1) });
+const metaTagToken = a => ({start: a[0], end: a[a.length-1], mid: a.slice(1, a.length-1)});
 
 // constantToken :: [String] => Object
-const constantToken = a => ({ constant: a[0] });
+const constantToken = a => ({constant: a[0]});
 
-// generateElementTokens :: String => [String]
+// generateElementTokens :: String => [String] 
 const generateHighlightToken = p => a => highlightToken(p + a[0], a[1]);
 
-// isSingleton :: [a] => Boolean
+// isSingleton :: [a] => Boolean 
 const isSingleton = R.compose(R.equals(1), R.length);
 
-// notSingleton :: [a] => Boolean
+// notSingleton :: [a] => Boolean 
 const notSingleton = R.compose(R.not, isSingleton);
 
 // generateConstantTags :: [String] => [Object]
-const generateConstantTags = xs => R.map(generateHighlightToken(""), R.chain(R.compose(R.toPairs, constantToken), R.filter(isSingleton, xs)));
+const generateConstantTags = xs => R.map(generateHighlightToken(""), 
+					R.chain(R.compose(R.toPairs, constantToken),
+					    R.filter(isSingleton, xs)));
 
 // generateMetaTags :: [String] => [Object]
-const generateMetaTags = xs => R.map(generateHighlightToken("meta.tag."), R.chain(R.compose(R.chain(utils.pairProduct), R.toPairs, metaTagToken), R.filter(notSingleton, xs)));
+const generateMetaTags = xs => R.map(generateHighlightToken("meta.tag."), 
+				    R.chain(R.compose(R.chain(utils.pairProduct), R.toPairs, metaTagToken), 
+					R.filter(notSingleton, xs)));
 
 // generateAttrTags :: [String] => [Object]
-const generateAttrTags = xs => R.map(R.compose(generateHighlightToken(""), R.pair("string.attribute-value")), flatProps('attr', xs));
+const generateAttrTags = xs => R.map(R.compose(generateHighlightToken(""), R.pair("string.attribute-value")), flatProps('attr', xs)); 
 
 // tagGenerator :: ([Object], [String]) => [Object]
 const tagGenerator = (xs, ys) => R.flatten([generateAttrTags(xs), generateMetaTags(ys), generateConstantTags(ys)]);
@@ -273,41 +325,53 @@ const tagGenerator = (xs, ys) => R.flatten([generateAttrTags(xs), generateMetaTa
 // generateTags :: [Object] => [Object]
 const generateTags = xs => tagGenerator(xs, allSplitTemplates(xs));
 
-ace.define('ace/mode/dynamic_leiden_plus', ["require", 'exports', 'module', 'ace/lib/oop', 'ace/lib/lang', 'ace/mode/text', 'ace/tokenizer', 'ace/mode/behaviour/dynamic_leiden_plus_behaviour', "ace/mode/dynamic_leiden_plus_highlight", 'ace/mode/folding/xml', 'ace/worker/worker_client'], function (acequire, exports, module) {
-    "use strict";
+ace.define('ace/mode/dynamic_leiden_plus', 
+        ["require", 'exports', 'module', 
+        'ace/lib/oop', 
+	'ace/lib/lang', 
+	'ace/mode/text', 
+        'ace/tokenizer', 
+	'ace/mode/behaviour/dynamic_leiden_plus_behaviour', 
+	"ace/mode/dynamic_leiden_plus_highlight",
+	'ace/mode/folding/xml',
+	'ace/worker/worker_client'
+	], 
+        function(acequire, exports, module) {
+	"use strict";
 
-    var oop = acequire("ace/lib/oop");
-    var lang = acequire("ace/lib/lang");
-    var TextMode = acequire("ace/mode/text").Mode;
-    var Tokenizer = acequire("ace/tokenizer").Tokenizer;
+var oop = acequire("ace/lib/oop");
+var lang = acequire("ace/lib/lang");
+var TextMode = acequire("ace/mode/text").Mode;
+var Tokenizer = acequire("ace/tokenizer").Tokenizer;
 
-    var MatchingBraceOutdent = acequire("./matching_brace_outdent").MatchingBraceOutdent;
-    var DynamicLeidenPlusHighlight = acequire("ace/mode/dynamic_leiden_plus_highlight").DynamicLeidenPlusHighlight;
-    var DynamicLeidenPlusBehaviour = acequire("ace/mode/dynamic_leiden_plus_behaviour").DynamicLeidenPlusBehaviour;
+var MatchingBraceOutdent = acequire("./matching_brace_outdent").MatchingBraceOutdent;
+var DynamicLeidenPlusHighlight = acequire("ace/mode/dynamic_leiden_plus_highlight").DynamicLeidenPlusHighlight;
+var DynamicLeidenPlusBehaviour = acequire("ace/mode/dynamic_leiden_plus_behaviour").DynamicLeidenPlusBehaviour;
 
-    var Mode = function (lang_def) {
-        var Highlight = new DynamicLeidenPlusHighlight(generateTags(lang_def.elements));
-        this.$tokenizer = new Tokenizer(Highlight.getRules());
-        this.$outdent = new MatchingBraceOutdent();
-        this.$behaviour = new DynamicLeidenPlusBehaviour(R.map(metaTagToken, R.filter(notSingleton, allSplitTemplates(lang_def.elements))));
-    };
+var Mode = function(lang_def) {
+    var Highlight = new DynamicLeidenPlusHighlight(generateTags(lang_def.elements));
+    this.$tokenizer = new Tokenizer(Highlight.getRules());
+    this.$outdent = new MatchingBraceOutdent();
+    this.$behaviour = new DynamicLeidenPlusBehaviour(R.map(metaTagToken, R.filter(notSingleton, allSplitTemplates(lang_def.elements))));
+};
 
-    oop.inherits(Mode, TextMode);
+oop.inherits(Mode, TextMode);
 
-    (function () {
-        this.voidElements = lang.arrayToMap([]);
+(function() {
+    this.voidElements = lang.arrayToMap([]);
 
-        //this.checkOutdent = function(state, line, input) {
-        //    return this.$outdent.checkOutdent(line, input);
-        //};
+    //this.checkOutdent = function(state, line, input) {
+    //    return this.$outdent.checkOutdent(line, input);
+    //};
 
-        //this.autoOutdent = function(state, doc, row) {
-        //    this.$outdent.autoOutdent(doc, row);
-        //};
-    }).call(Mode.prototype);
+    //this.autoOutdent = function(state, doc, row) {
+    //    this.$outdent.autoOutdent(doc, row);
+    //};
+}).call(Mode.prototype);
 
-    exports.Mode = Mode;
+exports.Mode = Mode;
 });
+
 
 var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 
@@ -316,44 +380,46 @@ var setMode = (ed, l) => ed.getSession().setMode(new aye.Mode(l));
 exports.setMode = setMode;
 
 },{"../utils.js":8,"./behaviour":3,"./highlight":4,"./outdent":6,"ramda":14}],6:[function(require,module,exports){
-ace.define("ace/mode/matching_brace_outdent", ["require", "exports", "module", "ace/range"], function (acequire, exports, module) {
-    "use strict";
+ace.define("ace/mode/matching_brace_outdent",["require","exports","module","ace/range"], function(acequire, exports, module) {
+"use strict";
 
-    var Range = acequire("../range").Range;
+var Range = acequire("../range").Range;
 
-    var MatchingBraceOutdent = function () {};
+var MatchingBraceOutdent = function() {};
 
-    (function () {
+(function() {
 
-        this.checkOutdent = function (line, input) {
-            if (!/^\s+$/.test(line)) return false;
+    this.checkOutdent = function(line, input) {
+        if (! /^\s+$/.test(line))
+            return false;
 
-            return (/^\s*\}/.test(input)
-            );
-        };
+        return /^\s*\}/.test(input);
+    };
 
-        this.autoOutdent = function (doc, row) {
-            var line = doc.getLine(row);
-            var match = line.match(/^(\s*\})/);
+    this.autoOutdent = function(doc, row) {
+        var line = doc.getLine(row);
+        var match = line.match(/^(\s*\})/);
 
-            if (!match) return 0;
+        if (!match) return 0;
 
-            var column = match[1].length;
-            var openBracePos = doc.findMatchingBracket({ row: row, column: column });
+        var column = match[1].length;
+        var openBracePos = doc.findMatchingBracket({row: row, column: column});
 
-            if (!openBracePos || openBracePos.row == row) return 0;
+        if (!openBracePos || openBracePos.row == row) return 0;
 
-            var indent = this.$getIndent(doc.getLine(openBracePos.row));
-            doc.replace(new Range(row, 0, row, column - 1), indent);
-        };
+        var indent = this.$getIndent(doc.getLine(openBracePos.row));
+        doc.replace(new Range(row, 0, row, column-1), indent);
+    };
 
-        this.$getIndent = function (line) {
-            return line.match(/^\s*/)[0];
-        };
-    }).call(MatchingBraceOutdent.prototype);
+    this.$getIndent = function(line) {
+        return line.match(/^\s*/)[0];
+    };
 
-    exports.MatchingBraceOutdent = MatchingBraceOutdent;
+}).call(MatchingBraceOutdent.prototype);
+
+exports.MatchingBraceOutdent = MatchingBraceOutdent;
 });
+
 
 },{}],7:[function(require,module,exports){
 var R = require('ramda');
@@ -361,45 +427,44 @@ var ed_tools = require('./editor_tools.js');
 var xs = require('./xsugar.js');
 
 // elemVariants :: String => Object => [Object]
-const elemVariants = p => obj => R.map(R.merge(R.dissoc(p, obj)), R.map(R.objOf(p), R.prop(p, obj)));
+const elemVariants = p => obj => R.map(R.merge(R.dissoc(p,obj)), R.map(R.objOf(p), R.prop(p, obj)));
 
 // constructVariants:: String => [Object] => [Object]
-const constructVariants = a => R.chain(R.when(R.prop(a), elemVariants(a)));
+const constructVariants = (a) => R.chain(R.when(R.prop(a), elemVariants(a)));
 
 // strip :: String -> String
-const strip = R.replace(/\W/g, '');
+const strip = R.replace(/\W/g,'');
 
-const ifProp = a => R.propOr("", a);
+const ifProp = (a) => R.propOr("", a);
 
 const ifAttr = R.compose(strip, ifProp("attr"));
 
 // buttonObj
-const button = a => f => ({ text: `${ a.name } ${ ifAttr(a) }`, id: `button_${ a.name + ifAttr(a) }`, class: 'btn btn-default', click: f });
+const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, id: `button_${a.name+ifAttr(a)}`, class:'btn btn-default', click: f});
 
 // createButton :: Object => Object
-const createButton = b => $('<button/>', b);
+const createButton = (b) => $('<button/>', b);
 
-// addTo :: Object => Object
+// addTo :: Object => Object 
 const addTo = obj => elem => obj.append(elem);
 
 exports.createUI = function (loc, env, url, lang) {
-    addTo(loc)(createButton(button({ name: "Convert to Epidoc" })(function () {
-        xs.convertForSplit(url, env)(env.editor.getValue());
-    })));
-    addTo(loc)(createButton(button({ name: "Toggle Epidoc Panel" })(function () {
-        ed_tools.toggleSplit(env.split);
-    })));
-    R.map(R.compose(addTo(loc), createButton, R.converge(R.call, [button, R.partial(ed_tools.element_insert, [env.editor])])), constructVariants('attr')(lang.elements));
-};
+    addTo(loc)(createButton(button({name:"Convert to Epidoc"})(function (){xs.convertForSplit(url, env)(env.editor.getValue())} )));
+    addTo(loc)(createButton(button({name:"Toggle Epidoc Panel"})(function() {ed_tools.toggleSplit(env.split)})));
+    R.map(R.compose(addTo(loc), 
+                createButton, 
+                R.converge(R.call, [button, R.partial(ed_tools.element_insert, [env.editor])])
+               ), constructVariants('attr')(lang.elements));
+    };
 
 },{"./editor_tools.js":1,"./xsugar.js":9,"ramda":14}],8:[function(require,module,exports){
 var $ = require('jquery');
 var R = require('ramda');
 
 // ajaxCORSPost :: (String, Function, Function) => String
-const ajaxCORSPost = (u, s, e) => d => $.ajax({ url: u, type: "POST", crossDomain: true, data: d, dataType: "json", success: s, error: e });
+const ajaxCORSPost = (u, s, e) => (d) => $.ajax({url:u, type:"POST", crossDomain:true, data:d, dataType:"json", success:s, error:e});
 
-//
+// 
 const toList = R.ifElse(R.is(Array), R.identity, R.of);
 
 const pairProduct = a => R.xprod(toList(a[0]), toList(a[1]));
@@ -415,9 +480,7 @@ var utils = require('./utils.js');
 var ed_tools = require('./editor_tools.js');
 
 // xsugarPostData :: (String, String) => String => Object
-const xsugarPostData = (dir, type) => data => {
-  return { content: data, direction: dir, type: type };
-};
+const xsugarPostData = (dir, type) => data => {return {content: data, direction: dir, type: type}};
 
 // getException :: Object xsugarResponse -> Object xsugarException
 const getException = R.prop('exception');
@@ -426,18 +489,16 @@ const getException = R.prop('exception');
 const getContent = R.prop('content');
 
 // toAceAnnotation :: Object xsugarException -> Object aceAnnotation
-const toAceAnnotation = e => {
-  return { column: e.column, raw: e.cause, row: e.line - 1, text: e.cause, type: "error" };
-};
+const toAceAnnotation = (e) => { return {column:e.column, raw:e.cause, row:e.line-1, text:e.cause, type:"error"}};
 
 // toAceAnnotations :: [Object xsugarException] -> [Object aceAnnotation]
-const toAceAnnotations = a => R.map(toAceAnnotation, utils.toList(a));
+const toAceAnnotations = (a) => R.map(toAceAnnotation, utils.toList(a))
 
-const transLeidentoEpidoc = xsugarPostData("nonxml2xml", "translation_epidoc");
-const epidoctoTransLeiden = xsugarPostData("xml2nonxml", "translation_epidoc");
+const transLeidentoEpidoc = xsugarPostData("nonxml2xml","translation_epidoc"); 
+const epidoctoTransLeiden = xsugarPostData("xml2nonxml","translation_epidoc"); 
 
-const leidentoEpidoc = xsugarPostData("nonxml2xml", "epidoc");
-const epidoctoLeiden = xsugarPostData("xml2nonxml", "epidoc");
+const leidentoEpidoc = xsugarPostData("nonxml2xml","epidoc"); 
+const epidoctoLeiden = xsugarPostData("xml2nonxml","epidoc"); 
 
 const xsugarXMLinSplit = env => r => ed_tools.openTextInSplit(env)(getContent(r));
 
@@ -447,11 +508,11 @@ const formatResponse = e => R.ifElse(R.has('exception'), setResponseErrors(e.edi
 
 const logIt = a => console.log(a);
 
-const convertForSplit = (url, env) => t => utils.ajaxCORSPost(url, formatResponse(env), logIt)(transLeidentoEpidoc(t));
+const convertForSplit = (url, env) => t => utils.ajaxCORSPost(url, formatResponse(env), logIt)(transLeidentoEpidoc(t))
 
 exports.convertForSplit = convertForSplit;
-//const commentarytoEpidoc = xsugarPostData("nonxml2xml","commentary");
-//const epidoctoCommentary = xsugarPostData("xml2nonxml","commentary");
+//const commentarytoEpidoc = xsugarPostData("nonxml2xml","commentary"); 
+//const epidoctoCommentary = xsugarPostData("xml2nonxml","commentary"); 
 
 /*
 Request Parameters:
@@ -460,6 +521,7 @@ Request Parameters:
   can use this for e.g. translation Leiden as well)
 * `direction`: `xml2nonxml` or `nonxml2xml`
 */
+
 
 },{"./editor_tools.js":1,"./utils.js":8,"ramda":14}],10:[function(require,module,exports){
 ace.define("ace/split",["require","exports","module","ace/lib/oop","ace/lib/lang","ace/lib/event_emitter","ace/editor","ace/virtual_renderer","ace/edit_session"], function(acequire, exports, module) {
