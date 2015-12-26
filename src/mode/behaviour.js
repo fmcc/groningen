@@ -1,20 +1,12 @@
 var R = require('ramda');
 
-ace.define("ace/mode/dynamic_leiden_plus_behaviour",["require","exports","module","ace/lib/oop","ace/mode/behaviour","ace/token_iterator","ace/lib/lang"], function(acequire, exports, module) {
-"use strict";
-
-var oop = acequire("ace/lib/oop");
-var Behaviour = acequire("ace/mode/behaviour").Behaviour;
-var TokenIterator = acequire("ace/token_iterator").TokenIterator;
-var lang = acequire("ace/lib/lang");
-
 const isType = (token, type) => token.type.lastIndexOf(type) > -1;
 
 // splt :: String => [String]
 const splt = R.split('');
 
-// tagChars :: String => Function 
-const tagChars = t => R.compose(R.uniq, R.chain(R.compose(splt, R.prop(t))))
+// tagChars :: [String] => Function 
+const tagChars = xs => R.compose(R.uniq, R.chain(R.compose(R.split(''), R.pathOr('', xs))))
 
 // splitProp :: String => Function
 const splitProp = p => R.compose(splt, R.prop(p))
@@ -35,50 +27,71 @@ const objLenEQ = x => R.compose(R.equals(x), R.length, R.keys);
 
 const isLangObj = R.allPass([R.prop('start'), objLenEQ(3)]);
 
-var DynamicLeidenPlusBehaviour = function (elements) {
-            
-    var start_trie = buildPropTrie('start', elements);
-    var start_chars = tagChars('start')(elements);
-    var q = queryTrie(start_trie);
+ace.define("ace/mode/dynamic_leiden_plus_behaviour",["require","exports","module","ace/lib/oop","ace/mode/behaviour","ace/token_iterator","ace/lib/lang"], function(acequire, exports, module) {
+"use strict";
+
+var oop = acequire("ace/lib/oop");
+var Behaviour = acequire("ace/mode/behaviour").Behaviour;
+var TokenIterator = acequire("ace/token_iterator").TokenIterator;
+var lang = acequire("ace/lib/lang");
+
+var DynamicLeidenPlusBehaviour = function (lang_elements) {
+    //var start_trie = buildPropTrie('start', elements);
+    var start_chars = tagChars(['elements','start'])(lang_elements);
+    console.log(start_chars);
+    //var q = queryTrie(start_trie);
 
     var insertTag = function (iter, pos, text, token, tag) {
         var element = token.value;
         if (iter.getCurrentTokenRow() == pos.row)
             element = element.substring(0, pos.column - iter.getCurrentTokenColumn());
-        var wit =  {
-            text: text + R.join(" ", tag.mid) + tag.end,
+        return {
+            text: text + tag,
             selection: [1, 1]
         };
-        return wit;
     };
 
+    //var stepBackToTag = function (str) {
+    //    for (var i=1; i<=str.length; i++) {
+    //        var t = q(R.slice(-i, Infinity, str));
+    //        if (t) { return t; }
+    //    }
+    //    return;
+    //}
 
     this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
         var p = editor.getCursorPosition();
         var i = new TokenIterator(session, p.row, p.column);
         var t = i.getCurrentToken() || i.stepBackward();
-        // return if this is the first character typed
         if (!t) {return};
         // if the character typed is not one that is in tags
         if (R.not(R.contains(text, start_chars))) {
             if (isType(t, "start")) {
-                return insertTag(i, p, text, t, q(t.value));
-            } else {
-                console.log(1);
-                return;
-            }
-        } else {
-            var c_tag = q(t.value + text);
-            if (c_tag && isLangObj(c_tag)) {
-                return; 
-            } else {
-                var tag = q(text);
-                var t_tag = q(t.value);
-                console.log(t.value);
-                console.log(c_tag);
-                console.log(t_tag);
-            }
+                return insertTag(i, p, text, t, "aye");
+        //        if (q(t.value)) {
+        //            return insertTag(i, p, text, t, q(t.value));
+        //        } else {
+        //            return insertTag(i, p, text, t, stepBackToTag(t.value));
+        //        }
+        //    } else {
+        //        return;
+        //    }
         }
+        //} else {
+        //    var c_tag = q(t.value + text);
+        //    if (c_tag) {
+        //        if (isLangObj(c_tag)) {
+        //            return insertTag(i, p, text, t, c_tag);
+        //        } else {
+        //            return; 
+        //        }
+        //    } else {
+        //        var t_tag = q(t.value);
+        //        if (t_tag) {
+        //            return insertTag(i, p, text, t, t_tag);
+        //        }
+        //    }
+        //}
         // if just the text is the tag, then wait. 
         // if the text and token can't be anything, use the token value
         // if the text and token could be something, wait
