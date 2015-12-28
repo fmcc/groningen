@@ -57,53 +57,61 @@ var ace = require('brace');
 require('brace/theme/solarized_light');
 require('brace/mode/xml');
 require('brace/ext/split.js');
-var mode_tools = require('./mode/mode.js');
+require('./mode/mode.js');
 
 var utils = require('./utils.js');
 var ui = require('./ui.js');
 
 var Split = ace.acequire("ace/ext/split").Split;
-var container = document.getElementById("leiden-plus-editor");
 var theme = ace.acequire("ace/theme/solarized_light");
 ace.acequire("ace/mode/xml");
 
-function LeidenEditor(i) {
-    // Initialises the Leiden Editor
-    var ed_opt = { 
+var DynamicLeidenPlusMode = ace.acequire('ace/mode/dynamic_leiden_plus').Mode;
+
+var default_options = {
         fontSize: 16,
         maxLines: 200,
         showPrintMargin: false,
         theme: 'ace/theme/solarized_light',
-        wrapBehavioursEnabled: true, 
-        showInvisibles: true, 
+        wrap: true,
+        //showInvisibles: true, 
         tabSize: 2,
         useSoftTabs: true,
-        wrap: true,
     };
 
+
+var container = document.getElementById("leiden-plus-editor");
+
+function Groningen(i) {
     var env = {};
     var split = new Split(document.getElementById(i.editor), theme, 2);
-    env.editor = split.getEditor(0);
-    // Suppresses error message about deprecated function. 
-    env.editor.$blockScrolling = Infinity;
-    env.editor.setOptions(ed_opt);
 
-    mode_tools.setMode(env.editor, i.language_definition);
-    env.editor.setBehavioursEnabled(true);
-    //split.getEditor(1).setOptions(ed_opt);
+    env.leiden_editor = split.getEditor(0);
+    env.epidoc_editor = split.getEditor(1);
+
+    // Suppresses error message about deprecated function. 
+    env.leiden_editor.$blockScrolling = Infinity;
+    env.leiden_editor.setOptions(default_options);
+
+    env.leiden_editor.getSession().setMode(new DynamicLeidenPlusMode(i.language_definition));
+
+    env.leiden_editor.setBehavioursEnabled(true);
+
     split.setSplits(1);
     split.on("focus", function(editor) {
         env.editor = editor;
     });
-    env.opt = ed_opt;
+    env.opt = default_options;
     env.split = split;  
-    env.split.$editors[1].getSession().setMode("ace/mode/xml");
+
+    env.epidoc_editor.getSession().setMode("ace/mode/xml");
+    env.epidoc_editor.setOptions(default_options);
 
     ui.createUI($(i.controls), env, i.xsugar_url, i.language_definition);
-    window.env = env;
+    return env;
 };
 
-window.LeidenEditor = LeidenEditor;
+window.Groningen = Groningen;
 
 },{"./mode/mode.js":5,"./ui.js":7,"./utils.js":8,"brace":11,"brace/ext/split.js":10,"brace/mode/xml":12,"brace/theme/solarized_light":13,"jquery":15,"ramda":16}],3:[function(require,module,exports){
 var R = require('ramda');
@@ -350,13 +358,14 @@ var Mode = function(lang_def) {
 oop.inherits(Mode, TextMode);
 
 (function() {
+
     this.voidElements = lang.arrayToMap([]);
+
 }).call(Mode.prototype);
 
 exports.Mode = Mode;
 });
 
-var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 
 var setMode = (ed, l) => ed.getSession().setMode(new aye.Mode(l));
 
@@ -432,11 +441,11 @@ const createButton = (b) => $('<button/>', b);
 const addTo = obj => elem => obj.append(elem);
 
 exports.createUI = function (loc, env, url, lang) {
-    addTo(loc)(createButton(button({name:"Convert to Epidoc"})(function (){xs.convertForSplit(url, env)(env.editor.getValue())} )));
+    addTo(loc)(createButton(button({name:"Convert to Epidoc"})(function (){xs.convertForSplit(url, env)(env.leiden_editor.getValue())} )));
     addTo(loc)(createButton(button({name:"Toggle Epidoc Panel"})(function() {ed_tools.toggleSplit(env.split)})));
     R.map(R.compose(addTo(loc), 
                 createButton, 
-                R.converge(R.call, [button, R.partial(ed_tools.element_insert, [env.editor])])
+                R.converge(R.call, [button, R.partial(ed_tools.element_insert, [env.leiden_editor])])
                ), constructVariants('attr')(lang.elements));
     };
 

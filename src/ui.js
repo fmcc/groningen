@@ -25,10 +25,10 @@ const createButton = (b) => $('<button/>', b);
 const addTo = obj => elem => obj.append(elem);
 
 exports.createUI = function (loc, env, url, lang) {
-    addTo(loc)(createButton(button({name:"Convert to Epidoc"})(function (){xs.convertForSplit(url, env)(env.editor.getValue())} )));
+    addTo(loc)(createButton(button({name:"Convert to Epidoc"})(function (){xs.convertForSplit(url, env)(env.leiden_editor.getValue())} )));
     addTo(loc)(createButton(button({name:"Toggle Epidoc Panel"})(function() {ed_tools.toggleSplit(env.split)})));
     R.map(R.compose(addTo(loc), 
                 createButton, 
-                R.converge(R.call, [button, R.partial(ed_tools.element_insert, [env.editor])])
+                R.converge(R.call, [button, R.partial(ed_tools.element_insert, [env.leiden_editor])])
                ), constructVariants('attr')(lang.elements));
     };

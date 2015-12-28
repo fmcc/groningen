@@ -54,13 +54,14 @@ var Mode = function(lang_def) {
 oop.inherits(Mode, TextMode);
 
 (function() {
+
     this.voidElements = lang.arrayToMap([]);
+
 }).call(Mode.prototype);
 
 exports.Mode = Mode;
 });
 
-var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 
 var setMode = (ed, l) => ed.getSession().setMode(new aye.Mode(l));
 
