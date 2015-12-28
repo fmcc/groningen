@@ -3,6 +3,7 @@ var R = require('ramda');
 var ace = require('brace');
 
 require('brace/theme/solarized_light');
+require('brace/mode/xml');
 require('brace/ext/split.js');
 var mode_tools = require('./mode/mode.js');
 
@@ -12,6 +13,7 @@ var ui = require('./ui.js');
 var Split = ace.acequire("ace/ext/split").Split;
 var container = document.getElementById("leiden-plus-editor");
 var theme = ace.acequire("ace/theme/solarized_light");
+ace.acequire("ace/mode/xml");
 
 function LeidenEditor(i) {
     // Initialises the Leiden Editor
@@ -23,7 +25,8 @@ function LeidenEditor(i) {
         wrapBehavioursEnabled: true, 
         showInvisibles: true, 
         tabSize: 2,
-        useSoftTabs: true
+        useSoftTabs: true,
+        wrap: true,
     };
 
     var env = {};
@@ -40,7 +43,9 @@ function LeidenEditor(i) {
     split.on("focus", function(editor) {
         env.editor = editor;
     });
+    env.opt = ed_opt;
     env.split = split;  
+    env.split.$editors[1].getSession().setMode("ace/mode/xml");
 
     ui.createUI($(i.controls), env, i.xsugar_url, i.language_definition);
     window.env = env;

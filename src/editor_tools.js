@@ -31,7 +31,7 @@ const setEditorText = ed => t => ed.setValue(t);
 // setAnnotations :: AceEditor -> String => IO DOM
 const setAnnotations = ed => a => ed.getSession().setAnnotations(a);
 
-const openTextInSplit = env => t => [openSplit(env.split), setEditorText(env.split.$editors[1])(t)];
+const openTextInSplit = env => t => [openSplit(env.split), env.split.$editors[1].setOptions(env.opt), setEditorText(env.split.$editors[1])(t)];
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {

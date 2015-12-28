@@ -6,14 +6,8 @@ require('./highlight');
 
 const tags = [[''], ['constant'], ['start','end'], ['start','mid','end']]
 
-// trim :: String => String
-const trim = s => s.trim();
-
-// notEmpty :: String => Boolean
-const notEmpty = s => s != '';
-
 // nonEmptyStrings :: [String] => [String]
-const nonEmptyStrings = R.compose(R.filter(notEmpty), R.map(trim));
+const nonEmptyStrings = R.compose(R.filter(R.compose(R.not, R.isEmpty)), R.map(R.trim));
 
 // splitTemplate :: Object => [String]
 const splitTemplate = R.compose(nonEmptyStrings, R.split(/{\w+}/), R.propOr('','template'));
@@ -54,7 +48,6 @@ var Mode = function(lang_def) {
     var lang_elements = R.map(addTemplateElements, lang_def.elements);
     var Highlight = new DynamicLeidenPlusHighlight(lang_elements);
     this.$tokenizer = new Tokenizer(Highlight.getRules());
-    this.$outdent = new MatchingBraceOutdent();
     this.$behaviour = new DynamicLeidenPlusBehaviour(lang_elements);
 };
 
@@ -62,19 +55,10 @@ oop.inherits(Mode, TextMode);
 
 (function() {
     this.voidElements = lang.arrayToMap([]);
-
-    //this.checkOutdent = function(state, line, input) {
-    //    return this.$outdent.checkOutdent(line, input);
-    //};
-
-    //this.autoOutdent = function(state, doc, row) {
-    //    this.$outdent.autoOutdent(doc, row);
-    //};
 }).call(Mode.prototype);
 
 exports.Mode = Mode;
 });
-
 
 var aye = ace.acequire('ace/mode/dynamic_leiden_plus');
 
