@@ -28,7 +28,7 @@ const xsugarXMLinSplit = env => r => ed_tools.openTextInSplit(env)(getContent(r)
 
 const setResponseErrors = ed => R.compose(ed_tools.setAnnotations(ed), toAceAnnotations, getException);
 
-const formatResponse = e => R.ifElse(R.has('exception'), setResponseErrors(e.editor), xsugarXMLinSplit(e));
+const formatResponse = e => R.ifElse(R.has('exception'), setResponseErrors(e.leiden_editor), xsugarXMLinSplit(e));
 
 const logIt = a => console.log(a);
 
