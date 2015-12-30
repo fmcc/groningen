@@ -4,17 +4,17 @@ leiden_plus_translation = {
     elements: [
     {
         name: "translation", 
-        template:"<T={attr}\n{text}\n=T>",
+        template:"<T={attr}\n\t{text}\n=T>",
         attr: [".en",".de"]
     },
     {
         name: "div",
-        template:"<D={attr}\n{text}\n=D>",
+        template:"<D={attr}\n\t{text}\n=D>",
         attr: [".folio"]
     },
     {
         name: "p",
-        template: "<=\n{text}\n=>",
+        template: "<=\n\t{text}\n=>",
     },
     {
         name: "line_number",

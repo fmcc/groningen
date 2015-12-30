@@ -1,5 +1,5 @@
 var R = require('ramda');
-var utils = require('../utils.js');
+
 require('./outdent');
 require('./behaviour');
 require('./highlight');
