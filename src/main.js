@@ -8,6 +8,7 @@ require('brace/ext/split.js');
 require('./mode/mode.js');
 
 var createUI = require('./ui.js').createUI;
+var bindInput = require('./editor_tools.js').bindInput;
 var Split = ace.acequire("ace/ext/split").Split;
 var theme = ace.acequire("ace/theme/solarized_light");
 ace.acequire("ace/mode/xml");
@@ -54,6 +55,10 @@ function Groningen(config) {
     
     // Only generate the UI if a container is defined.  
     if (R.has('ui_container', config)) { createUI(env, config) };
+
+    // Bind inputs if they are defined. 
+    if (R.has('leiden_output', config)) { bindInput(env.leiden_editor, config.leiden_output); }
+    if (R.has('epidoc_output', config)) { bindInput(env.epidoc_editor, config.epidoc_output); }
 
     // Close the Epidoc split
     env.split.setSplits(1);

@@ -10,7 +10,7 @@ leiden_plus_translation = {
     {
         name: "div",
         template:"<D={attr}\n\t{text}\n=D>",
-        attr: [".folio"]
+        attr: [".1.folio", ".r", ".v"]
     },
     {
         name: "p",

@@ -56,17 +56,22 @@
       <div id="editor"> </div>
     </div>
 
+    <textarea id="leiden-output" style="display:none"></textarea>
+    <textarea id="epidoc-output" style="display:none"></textarea>
+
     <script src="js/groningen.js"></script>
     <script src="js/leiden_plus.js"></script>
     <script type="text/javascript" charset="utf-8">
       var lang_def = leiden_plus_translation; 
 
       var editor = Groningen({
-        "editor_container": "editor",
-        "language_definition": lang_def,
-        "ui_container": "editor-ui",
-        "ui_button": {class:'btn btn-default btn-sm'},
-        "xsugar_url": "http://libdc3-dev-03.oit.duke.edu/xsugar/",
+        editor_container: "editor",
+        language_definition: lang_def,
+        leiden_output: "leiden-output",
+        epidoc_output: "epidoc-output",
+        ui_container: "editor-ui",
+        ui_button: {class:'btn btn-default btn-sm'},
+        xsugar_url: "http://libdc3-dev-03.oit.duke.edu/xsugar/",
       });
 
     </script>

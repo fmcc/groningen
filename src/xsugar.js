@@ -29,7 +29,7 @@ const epidoctoTransLeiden = xsugarPostData("xml2nonxml","translation_epidoc");
 const leidentoEpidoc = xsugarPostData("nonxml2xml","epidoc"); 
 const epidoctoLeiden = xsugarPostData("xml2nonxml","epidoc"); 
 
-const xsugarXMLinSplit = env => r => ed_tools.openTextInSplit(env)(getContent(r));
+const xsugarXMLinSplit = env => r => ed_tools.openEpidocInSplit(env)(getContent(r));
 
 const setResponseErrors = ed => R.compose(ed_tools.setAnnotations(ed), toAceAnnotations, getException);
 

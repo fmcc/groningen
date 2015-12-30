@@ -31,7 +31,6 @@ const createButton = (b) => $('<button/>', b);
 const addTo = obj => elem => obj.append(elem);
 
 exports.createUI = function (env, config) {
-    console.log("aye");
     var addButtonToUI = R.compose(addTo($('#' + config.ui_container)), createButton);
     var defaultButton = a => f => R.mergeWith(spaceConcat, config.ui_button, button(a)(f));
 

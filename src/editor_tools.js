@@ -1,4 +1,8 @@
+var $ = require('jquery');
 var R = require('ramda');
+
+// $id :: String => jQuery Object
+const $id = a => $('#' + a);
 
 /* Template formatting */
 // bracesWrap :: String -> String
@@ -26,12 +30,16 @@ const toggleSplit = R.ifElse(twoSplits, setSplit(1), setSplit(2));
 const openSplit = setSplit(2);
 
 // setEditorText :: AceEditor -> String => IO DOM
-const setEditorText = ed => t => ed.setValue(t);
+const setEditorText = ed => t => ed.setValue(t, 1);
 
 // setAnnotations :: AceEditor -> String => IO DOM
 const setAnnotations = ed => a => ed.getSession().setAnnotations(a);
 
-const openTextInSplit = env => t => [openSplit(env.split), env.split.$editors[1].setOptions(env.opt), setEditorText(env.split.$editors[1])(t)];
+// bindInput :: (AceEditor, String) => IO DOM
+const bindInput = (ed, a) => [ed.setValue($id(a).val()), 
+        ed.getSession().on('change', function () { $id(a).val(ed.getValue()) })];
+
+const openEpidocInSplit = env => t => [openSplit(env.split), env.epidoc_editor.setOptions(env.epidoc_options), setEditorText(env.epidoc_editor)(t)];
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
@@ -44,6 +52,7 @@ exports.element_insert = function (editor, lang_elem) {
         };
     };
 
+exports.bindInput = bindInput;
 exports.toggleSplit = toggleSplit;
 exports.setAnnotations = setAnnotations;
-exports.openTextInSplit = openTextInSplit;
+exports.openEpidocInSplit = openEpidocInSplit;

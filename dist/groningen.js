@@ -1,5 +1,9 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var $ = require('jquery');
 var R = require('ramda');
+
+// $id :: String => jQuery Object
+const $id = a => $('#' + a);
 
 /* Template formatting */
 // bracesWrap :: String -> String
@@ -27,12 +31,16 @@ const toggleSplit = R.ifElse(twoSplits, setSplit(1), setSplit(2));
 const openSplit = setSplit(2);
 
 // setEditorText :: AceEditor -> String => IO DOM
-const setEditorText = ed => t => ed.setValue(t);
+const setEditorText = ed => t => ed.setValue(t, 1);
 
 // setAnnotations :: AceEditor -> String => IO DOM
 const setAnnotations = ed => a => ed.getSession().setAnnotations(a);
 
-const openTextInSplit = env => t => [openSplit(env.split), env.split.$editors[1].setOptions(env.opt), setEditorText(env.split.$editors[1])(t)];
+// bindInput :: (AceEditor, String) => IO DOM
+const bindInput = (ed, a) => [ed.setValue($id(a).val()), 
+        ed.getSession().on('change', function () { $id(a).val(ed.getValue()) })];
+
+const openEpidocInSplit = env => t => [openSplit(env.split), env.epidoc_editor.setOptions(env.epidoc_options), setEditorText(env.epidoc_editor)(t)];
 
 exports.element_insert = function (editor, lang_elem) {
     return function () {
@@ -45,11 +53,12 @@ exports.element_insert = function (editor, lang_elem) {
         };
     };
 
+exports.bindInput = bindInput;
 exports.toggleSplit = toggleSplit;
 exports.setAnnotations = setAnnotations;
-exports.openTextInSplit = openTextInSplit;
+exports.openEpidocInSplit = openEpidocInSplit;
 
-},{"ramda":15}],2:[function(require,module,exports){
+},{"jquery":14,"ramda":15}],2:[function(require,module,exports){
 var $ = require('jquery');
 var R = require('ramda');
 var ace = require('brace');
@@ -60,6 +69,7 @@ require('brace/ext/split.js');
 require('./mode/mode.js');
 
 var createUI = require('./ui.js').createUI;
+var bindInput = require('./editor_tools.js').bindInput;
 var Split = ace.acequire("ace/ext/split").Split;
 var theme = ace.acequire("ace/theme/solarized_light");
 ace.acequire("ace/mode/xml");
@@ -107,6 +117,10 @@ function Groningen(config) {
     // Only generate the UI if a container is defined.  
     if (R.has('ui_container', config)) { createUI(env, config) };
 
+    // Bind inputs if they are defined. 
+    if (R.has('leiden_output', config)) { bindInput(env.leiden_editor, config.leiden_output); }
+    if (R.has('epidoc_output', config)) { bindInput(env.epidoc_editor, config.epidoc_output); }
+
     // Close the Epidoc split
     env.split.setSplits(1);
 
@@ -115,7 +129,7 @@ function Groningen(config) {
 
 window.Groningen = Groningen;
 
-},{"./mode/mode.js":5,"./ui.js":7,"brace":10,"brace/ext/split.js":9,"brace/mode/xml":11,"brace/theme/solarized_light":12,"jquery":14,"ramda":15}],3:[function(require,module,exports){
+},{"./editor_tools.js":1,"./mode/mode.js":5,"./ui.js":7,"brace":10,"brace/ext/split.js":9,"brace/mode/xml":11,"brace/theme/solarized_light":12,"jquery":14,"ramda":15}],3:[function(require,module,exports){
 var R = require('ramda');
 
 // Bit surprised this isn't in Ramda. 
@@ -449,7 +463,6 @@ const createButton = (b) => $('<button/>', b);
 const addTo = obj => elem => obj.append(elem);
 
 exports.createUI = function (env, config) {
-    console.log("aye");
     var addButtonToUI = R.compose(addTo($('#' + config.ui_container)), createButton);
     var defaultButton = a => f => R.mergeWith(spaceConcat, config.ui_button, button(a)(f));
 
@@ -493,7 +506,7 @@ const epidoctoTransLeiden = xsugarPostData("xml2nonxml","translation_epidoc");
 const leidentoEpidoc = xsugarPostData("nonxml2xml","epidoc"); 
 const epidoctoLeiden = xsugarPostData("xml2nonxml","epidoc"); 
 
-const xsugarXMLinSplit = env => r => ed_tools.openTextInSplit(env)(getContent(r));
+const xsugarXMLinSplit = env => r => ed_tools.openEpidocInSplit(env)(getContent(r));
 
 const setResponseErrors = ed => R.compose(ed_tools.setAnnotations(ed), toAceAnnotations, getException);
 
