@@ -18,13 +18,13 @@ var G = Groningen({
 
 The following configuration options can be defined when initialising the Groningen editor.  
 
-* `editor_container` - ID of a <div> which will be replaced by the editor. (String) 
+* `editor_container` - ID of a \<div\> which will be replaced by the editor. (String) 
 * `xsugar_url` - URL of the xsugar endpoint to be used for conversion to Epidoc XML. (String) 
 * `language_definition` - The language definition object described below. (Object)
 
-* `leiden_output` - ID of a <textarea> which the Leiden editor will be synchronised with. (String - optional)
-* `epidoc_output` - ID of a <textarea> which the Epidoc editor will be synchronised with.   (String - optional)
-* `ui_container` - ID of a <div> to which ui elements will be appended. (String - optional)
+* `leiden_output` - ID of a \<textarea\> which the Leiden editor will be synchronised with. (String - optional)
+* `epidoc_output` - ID of a \<textarea\> which the Epidoc editor will be synchronised with. (String - optional)
+* `ui_container` - ID of a \<div\> to which ui elements will be appended. (String - optional)
 * `ui_button` - HTML attribute object that will act as a mixin for all buttons generated for the ui. See [jQuery documentation](http://api.jquery.com/jQuery/#jQuery-html-attributes). Most useful for specifying default classes. (Object - optional)
 
 ## Language definition 
@@ -56,3 +56,4 @@ Strings that are defined as attributes, e.g. ` attr: ["tribe","footnote","inline
 ```
 
 ## Language definition 
+
