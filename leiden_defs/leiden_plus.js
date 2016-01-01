@@ -1,6 +1,7 @@
 
 leiden_plus_translation = {
     name: "Leiden+ translation", 
+    type: "translation_epidoc",
     elements: [
     {
         name: "translation", 

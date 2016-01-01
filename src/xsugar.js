@@ -23,25 +23,17 @@ const toAceAnnotation = (e) => { return {column:e.column, raw:e.cause, row:e.lin
 // toAceAnnotations :: [Object xsugarException] -> [Object aceAnnotation]
 const toAceAnnotations = (a) => R.map(toAceAnnotation, toList(a))
 
-const transLeidentoEpidoc = xsugarPostData("nonxml2xml","translation_epidoc"); 
-const epidoctoTransLeiden = xsugarPostData("xml2nonxml","translation_epidoc"); 
-
-const leidentoEpidoc = xsugarPostData("nonxml2xml","epidoc"); 
-const epidoctoLeiden = xsugarPostData("xml2nonxml","epidoc"); 
-
 const xsugarXMLinSplit = env => r => ed_tools.openEpidocInSplit(env)(getContent(r));
 
 const setResponseErrors = ed => R.compose(ed_tools.setAnnotations(ed), toAceAnnotations, getException);
 
 const formatResponse = e => R.ifElse(R.has('exception'), setResponseErrors(e.leiden_editor), xsugarXMLinSplit(e));
 
-const logIt = a => console.log(a);
+const logIt = a => console.log(a); 
 
-const convertForSplit = (url, env) => t => ajaxCORSPost(url, formatResponse(env), logIt)(transLeidentoEpidoc(t))
+const convertForSplit = (url, type, env) => t => ajaxCORSPost(url, formatResponse(env), logIt)(xsugarPostData('nonxml2xml', type)(t))
 
 exports.convertForSplit = convertForSplit;
-//const commentarytoEpidoc = xsugarPostData("nonxml2xml","commentary"); 
-//const epidoctoCommentary = xsugarPostData("xml2nonxml","commentary"); 
 
 /*
 Request Parameters:

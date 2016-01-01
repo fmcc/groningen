@@ -34,7 +34,7 @@ exports.createUI = function (env, config) {
     var addButtonToUI = R.compose(addTo($('#' + config.ui_container)), createButton);
     var defaultButton = a => f => R.mergeWith(spaceConcat, config.ui_button, button(a)(f));
 
-    addButtonToUI(defaultButton({name:"Convert to Epidoc", class:"btn-primary"})(function (){xs.convertForSplit(config.xsugar_url, env)(env.leiden_editor.getValue())} ));
+    addButtonToUI(defaultButton({name:"Convert to Epidoc", class:"btn-primary"})(function (){xs.convertForSplit(config.xsugar_url, config.language_definition.type, env)(env.leiden_editor.getValue())} ));
     addButtonToUI(defaultButton({name:"Toggle Epidoc Panel", class:"btn-primary"})(function() {ed_tools.toggleSplit(env.split)}));
 
     R.map(R.compose(addButtonToUI, 
