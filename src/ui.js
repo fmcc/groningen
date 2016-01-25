@@ -27,17 +27,29 @@ const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, class: ifClass(a) , id
 // createButton :: Object => Object
 const createButton = (b) => $('<button/>', b);
 
+// getOrCreateDiv :: String => Object
+const getOrCreateDiv = (s) => $(`#${s}`).length ? $(`#${s}`) : $(`<div id='${s}'></div>`);
+
 // addTo :: Object => Object 
 const addTo = obj => elem => obj.append(elem);
 
 exports.createUI = function (env, config) {
-    var addButtonToUI = R.compose(addTo($('#' + config.ui_container)), createButton);
+    var toContainer = addTo($('#' + config.ui_container));
+
+    var ed_act = getOrCreateDiv('editor-actions'); 
+    toContainer(ed_act); 
+    var addButtonToEdAct = R.compose(addTo(ed_act), createButton);
+
+    var ins_act = getOrCreateDiv('insertion-actions'); 
+    toContainer(ins_act); 
+    var addButtonToInsAct = R.compose(addTo(ins_act), createButton);
+
     var defaultButton = a => f => R.mergeWith(spaceConcat, config.ui_button, button(a)(f));
 
-    addButtonToUI(defaultButton({name:"Convert to Epidoc", class:"btn-primary"})(function (){xs.convertForSplit(config.xsugar_url, config.language_definition.type, env)(env.leiden_editor.getValue())} ));
-    addButtonToUI(defaultButton({name:"Toggle Epidoc Panel", class:"btn-primary"})(function() {ed_tools.toggleSplit(env.split)}));
+    addButtonToEdAct(defaultButton({name:"Convert to Epidoc", class:"btn-primary"})(function (){xs.convertForSplit(config.xsugar_url, config.language_definition.type, env)(env.leiden_editor.getValue())} ));
+    addButtonToEdAct(defaultButton({name:"Toggle Epidoc Panel", class:"btn-primary"})(function() {ed_tools.toggleSplit(env.split)}));
 
-    R.map(R.compose(addButtonToUI, 
+    R.map(R.compose(addButtonToInsAct, 
                 R.converge(R.call, [defaultButton, R.partial(ed_tools.element_insert, [env.leiden_editor])])
                ), constructVariants('attr')(config.language_definition.elements));
     };
