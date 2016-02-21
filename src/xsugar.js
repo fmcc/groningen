@@ -1,4 +1,5 @@
 var R = require('ramda');
+var $ = require('jquery');
 
 var ed_tools = require('./editor_tools.js');
 

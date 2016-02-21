@@ -491,6 +491,7 @@ exports.createUI = function (env, config) {
 
 },{"./editor_tools.js":1,"./xsugar.js":8,"jquery":14,"ramda":15}],8:[function(require,module,exports){
 var R = require('ramda');
+var $ = require('jquery');
 
 var ed_tools = require('./editor_tools.js');
 
@@ -535,7 +536,7 @@ Request Parameters:
 * `direction`: `xml2nonxml` or `nonxml2xml`
 */
 
-},{"./editor_tools.js":1,"ramda":15}],9:[function(require,module,exports){
+},{"./editor_tools.js":1,"jquery":14,"ramda":15}],9:[function(require,module,exports){
 ace.define("ace/split",["require","exports","module","ace/lib/oop","ace/lib/lang","ace/lib/event_emitter","ace/editor","ace/virtual_renderer","ace/edit_session"], function(acequire, exports, module) {
 "use strict";
 
