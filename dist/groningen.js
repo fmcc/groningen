@@ -42,6 +42,12 @@ const bindInput = (ed, a) => [ed.setValue($id(a).val()),
 
 const openEpidocInSplit = env => t => [openSplit(env.split), env.epidoc_editor.setOptions(env.epidoc_options), setEditorText(env.epidoc_editor)(t)];
 
+// toggleEpidocSplit :: AceSplit => IO DOM 
+const toggleEpidocSplit = env => [toggleSplit(env.split), env.epidoc_editor.setOptions(env.epidoc_options)];
+
+// toggleBehaviour :: AceEditor => IO DOM
+const toggleBehaviour = ed => ed.setBehavioursEnabled(R.not(ed.getBehavioursEnabled()));
+
 exports.element_insert = function (editor, lang_elem) {
     return function () {
             var t = editor.getSelectedText();
@@ -54,8 +60,9 @@ exports.element_insert = function (editor, lang_elem) {
     };
 
 exports.bindInput = bindInput;
-exports.toggleSplit = toggleSplit;
+exports.toggleBehaviour = toggleBehaviour;
 exports.setAnnotations = setAnnotations;
+exports.toggleEpidocSplit = toggleEpidocSplit;
 exports.openEpidocInSplit = openEpidocInSplit;
 
 },{"jquery":14,"ramda":15}],2:[function(require,module,exports){
@@ -482,7 +489,9 @@ exports.createUI = function (env, config) {
     var defaultButton = a => f => R.mergeWith(spaceConcat, config.ui_button, button(a)(f));
 
     addButtonToEdAct(defaultButton({name:"Convert to Epidoc", class:"btn-primary"})(function (){xs.convertForSplit(config.xsugar_url, config.language_definition.type, env)(env.leiden_editor.getValue())} ));
-    addButtonToEdAct(defaultButton({name:"Toggle Epidoc Panel", class:"btn-primary"})(function() {ed_tools.toggleSplit(env.split)}));
+    addButtonToEdAct(defaultButton({name:"Toggle Epidoc Panel", class:"btn-primary"})(function() {ed_tools.toggleEpidocSplit(env)}));
+
+    addButtonToEdAct(defaultButton({name:"Toggle Autocomplete", class:"btn-primary"})(function() {ed_tools.toggleBehaviour(env.leiden_editor)}));
 
     R.map(R.compose(addButtonToInsAct, 
                 R.converge(R.call, [defaultButton, R.partial(ed_tools.element_insert, [env.leiden_editor])])

@@ -41,6 +41,12 @@ const bindInput = (ed, a) => [ed.setValue($id(a).val()),
 
 const openEpidocInSplit = env => t => [openSplit(env.split), env.epidoc_editor.setOptions(env.epidoc_options), setEditorText(env.epidoc_editor)(t)];
 
+// toggleEpidocSplit :: AceSplit => IO DOM 
+const toggleEpidocSplit = env => [toggleSplit(env.split), env.epidoc_editor.setOptions(env.epidoc_options)];
+
+// toggleBehaviour :: AceEditor => IO DOM
+const toggleBehaviour = ed => ed.setBehavioursEnabled(R.not(ed.getBehavioursEnabled()));
+
 exports.element_insert = function (editor, lang_elem) {
     return function () {
             var t = editor.getSelectedText();
@@ -53,6 +59,7 @@ exports.element_insert = function (editor, lang_elem) {
     };
 
 exports.bindInput = bindInput;
-exports.toggleSplit = toggleSplit;
+exports.toggleBehaviour = toggleBehaviour;
 exports.setAnnotations = setAnnotations;
+exports.toggleEpidocSplit = toggleEpidocSplit;
 exports.openEpidocInSplit = openEpidocInSplit;

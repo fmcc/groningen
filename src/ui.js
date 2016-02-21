@@ -50,7 +50,9 @@ exports.createUI = function (env, config) {
     var defaultButton = a => f => R.mergeWith(spaceConcat, config.ui_button, button(a)(f));
 
     addButtonToEdAct(defaultButton({name:"Convert to Epidoc", class:"btn-primary"})(function (){xs.convertForSplit(config.xsugar_url, config.language_definition.type, env)(env.leiden_editor.getValue())} ));
-    addButtonToEdAct(defaultButton({name:"Toggle Epidoc Panel", class:"btn-primary"})(function() {ed_tools.toggleSplit(env.split)}));
+    addButtonToEdAct(defaultButton({name:"Toggle Epidoc Panel", class:"btn-primary"})(function() {ed_tools.toggleEpidocSplit(env)}));
+
+    addButtonToEdAct(defaultButton({name:"Toggle Autocomplete", class:"btn-primary"})(function() {ed_tools.toggleBehaviour(env.leiden_editor)}));
 
     R.map(R.compose(addButtonToInsAct, 
                 R.converge(R.call, [defaultButton, R.partial(ed_tools.element_insert, [env.leiden_editor])])
