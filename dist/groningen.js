@@ -453,8 +453,11 @@ const ifAttr = R.compose(R.replace(/\W/g,' '), R.propOr("", "attr"));
 
 const ifClass = R.propOr("", "class");
 
+// prevDef :: Function => Function
+const prevDef = f => R.pipe(R.tap(e => e.preventDefault()), f);
+
 // buttonObj
-const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, class: ifClass(a) , id: `button_${uScore(a.name+ifAttr(a))}`, click: f});
+const button = a => f => ({text:`${a.name} ${ifAttr(a)}`, class: ifClass(a) , id: `button_${uScore(a.name+ifAttr(a))}`, click: prevDef(f)});
 
 // createButton :: Object => Object
 const createButton = (b) => $('<button/>', b);
