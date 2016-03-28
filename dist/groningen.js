@@ -531,9 +531,17 @@ const setResponseErrors = ed => R.compose(ed_tools.setAnnotations(ed), toAceAnno
 
 const formatResponse = e => R.ifElse(R.has('exception'), setResponseErrors(e.leiden_editor), xsugarXMLinSplit(e));
 
+const unparsedResponse = e => R.ifElse(R.propEq('status', 200), fixJSONResponse(e), logIt); 
+
+const fixJSON = R.replace(/\\\'/g, "'");
+
+const parseJSON = s => $.parseJSON(s);
+
+const fixJSONResponse = e => R.compose(formatResponse(e), parseJSON, fixJSON, R.prop('responseText'));
+
 const logIt = a => console.log(a); 
 
-const convertForSplit = (url, type, env) => t => ajaxCORSPost(url, formatResponse(env), logIt)(xsugarPostData('nonxml2xml', type)(t))
+const convertForSplit = (url, type, env) => t => ajaxCORSPost(url, formatResponse(env), unparsedResponse(env))(xsugarPostData('nonxml2xml', type)(t))
 
 exports.convertForSplit = convertForSplit;
 
